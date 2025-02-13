@@ -1,5 +1,11 @@
 document.addEventListener("DOMContentLoaded", function () {
-    function drawChart(data = [10, 40, 30, 20, 50, 80, 60]) {
+    let latestData = null; // Store the latest data received from SAS VA
+
+    function drawChart(data) {
+        if (!data || data.length === 0) return;
+
+        latestData = data; // Update the stored data
+
         const container = document.getElementById("container");
         const chartElement = document.getElementById("chart");
 
@@ -12,12 +18,35 @@ document.addEventListener("DOMContentLoaded", function () {
             .attr("width", width)
             .attr("height", height);
 
-        const margin = { top: 40, right: 30, bottom: 40, left: 50 };
+        // **Create a temporary Y scale to estimate label width**
+        const tempYScale = d3.scaleLinear()
+            .domain([0, d3.max(data, d => d.value)])
+            .nice()
+            .range([height - 80, 0]); // Arbitrary height just for measurement
+
+        // **Measure the largest label width**
+        const tempSvg = d3.select("body").append("svg").attr("class", "temp-svg");
+        const tempText = tempSvg.append("g")
+            .call(d3.axisLeft(tempYScale))
+            .selectAll("text");
+
+        let maxLabelWidth = 0;
+        tempText.each(function () {
+            const bbox = this.getBBox();
+            if (bbox.width > maxLabelWidth) {
+                maxLabelWidth = bbox.width;
+            }
+        });
+
+        tempSvg.remove(); // Clean up temporary elements
+
+        // **Dynamic left margin based on maxLabelWidth**
+        const margin = { top: 40, right: 30, bottom: 60, left: maxLabelWidth + 10 };
         const chartWidth = width - margin.left - margin.right;
         const chartHeight = height - margin.top - margin.bottom;
 
         const xScale = d3.scaleBand()
-            .domain(data.map((_, i) => i))
+            .domain(data.map(d => d.label))
             .range([0, chartWidth])
             .padding(0.1);
 
@@ -55,12 +84,17 @@ document.addEventListener("DOMContentLoaded", function () {
                 g.select("#tooltip-text").remove();
             });
 
-        // X-axis
+        // X-axis with rotated labels
         g.append("g")
             .attr("transform", `translate(0,${chartHeight})`)
-            .call(d3.axisBottom(xScale).tickFormat(d => d + 1));
+            .call(d3.axisBottom(xScale))
+            .selectAll("text")
+            .style("text-anchor", "end")
+            .attr("dx", "-0.8em")
+            .attr("dy", "0.15em")
+            .attr("transform", "rotate(-45)");
 
-        // Y-axis
+        // **Apply dynamically calculated left margin to Y-axis**
         g.append("g").call(d3.axisLeft(yScale));
     }
 
@@ -73,8 +107,8 @@ document.addEventListener("DOMContentLoaded", function () {
         if (vaData.length === 0 || columns.length < 2) return;
 
         const formattedData = vaData.map(row => ({
-            label: row[0],
-            value: parseFloat(row[1])
+            label: row[0], // Use the first column as categorical labels
+            value: parseFloat(row[1]) // Use the second column as numerical values
         }));
 
         drawChart(formattedData); // Update chart dynamically
@@ -87,6 +121,10 @@ document.addEventListener("DOMContentLoaded", function () {
         window.attachEvent("onmessage", onMessage);
     }
 
-    drawChart(); // Initial draw with dummy data
-    window.addEventListener("resize", () => drawChart()); // Redraw on resize
+    // On resize, redraw with the latest received data (if available)
+    window.addEventListener("resize", function () {
+        if (latestData) {
+            drawChart(latestData); // Redraw using latest dataset
+        }
+    });
 });
