@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full Size Div with Border</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script src="chart.js" defer></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+        .container {
+            width: calc(100vw);
+            height: calc(100vh);
+            border: 20px solid red;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-size: 2em;
+            font-family: Arial, sans-serif;
+            box-sizing: border-box;
+            color: black;
+            position: relative;
+        }
+        .border-text {
+            color: red;
+            font-size: 0.8em;
+            margin-top: 10px;
+        }
+        .chart-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        svg {
+            max-width: 100%;
+            max-height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="container">
+        <div class="chart-container">
+            <svg id="chart"></svg>
+        </div>
+    </div>
+
+    <script>
+        function updateTextSize() {
+            const container = document.getElementById("container");
+            const textElement = document.getElementById("dimensionsText");
+            const borderElement = document.getElementById("borderText");
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            const borderWidth = 20;
+            textElement.textContent = `${width}px × ${height}px`;
+            borderElement.textContent = `Border: ${borderWidth}px`;
+        }
+
+        // Run the function initially and update on resize
+        window.addEventListener("load", updateTextSize);
+        window.addEventListener("resize", updateTextSize);
+    </script>
+</body>
+</html>
+

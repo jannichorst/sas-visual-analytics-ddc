@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full Size Div with Border</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+        .container {
+            width: calc(100vw);
+            height: calc(100vh);
+            border: 20px solid red;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-size: 2em;
+            font-family: Arial, sans-serif;
+            box-sizing: border-box;
+            color: black;
+        }
+        .border-text {
+            color: red;
+            font-size: 0.8em;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="container">
+        <div id="dimensionsText"></div>
+        <div id="borderText" class="border-text"></div>
+    </div>
+
+    <script>
+        function updateTextSize() {
+            const container = document.getElementById("container");
+            const textElement = document.getElementById("dimensionsText");
+            const borderElement = document.getElementById("borderText");
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            const borderWidth = 20;
+            textElement.textContent = `${width}px × ${height}px`;
+            borderElement.textContent = `Border: ${borderWidth}px`;
+        }
+
+        // Run the function initially and update on resize
+        window.addEventListener("load", updateTextSize);
+        window.addEventListener("resize", updateTextSize);
+    </script>
+</body>
+</html>
+

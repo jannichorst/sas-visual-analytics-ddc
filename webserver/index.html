@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DDC Web Server</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <script src="js/custom-script.js"></script>
+    <script>
+        window.addEventListener("message", function(event) {
+            if (event && event.data) {
+                document.getElementById("output").innerText = JSON.stringify(event.data, null, 2);
+            }
+        });
+    </script>
+</head>
+<body>
+    <h1>DDC Web Server is Running</h1>
+    <p>Static file serving via NGINX</p>
+    <pre id="output">Waiting for data...</pre>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDC Bar Chart</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+</head>
+<body>
+    <div id="container" style="width: 100%; height: 100%;">
+        <svg id="chart"></svg>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            function drawChart(data) {
+                if (!data || data.length === 0) return;
+
+                const container = document.getElementById("container");
+                const chartElement = document.getElementById("chart");
+                const width = container.clientWidth;
+                const height = container.clientHeight;
+
+                d3.select(chartElement).selectAll("*").remove(); // Clear existing SVG
+
+                const svg = d3.select(chartElement)
+                    .attr("width", width)
+                    .attr("height", height);
+
+                const margin = { top: 40, right: 30, bottom: 30, left: 40 };
+                const chartWidth = width - margin.left - margin.right;
+                const chartHeight = height - margin.top - margin.bottom;
+
+                const xScale = d3.scaleBand()
+                    .domain(data.map(d => d.label))
+                    .range([0, chartWidth])
+                    .padding(0.1);
+
+                const yScale = d3.scaleLinear()
+                    .domain([0, d3.max(data, d => d.value)])
+                    .nice()
+                    .range([chartHeight, 0]);
+
+                const g = svg.append("g")
+                    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+                // Bars with hover effect
+                g.selectAll("rect")
+                    .data(data)
+                    .enter()
+                    .append("rect")
+                    .attr("x", d => xScale(d.label))
+                    .attr("y", d => yScale(d.value))
+                    .attr("width", xScale.bandwidth())
+                    .attr("height", d => chartHeight - yScale(d.value))
+                    .attr("fill", "steelblue")
+                    .on("mouseover", function (event, d) {
+                        d3.select(this).attr("fill", "darkblue");
+                        g.append("text")
+                            .attr("id", "tooltip-text")
+                            .attr("x", xScale(d.label) + xScale.bandwidth() / 2)
+                            .attr("y", yScale(d.value) - 5)
+                            .attr("text-anchor", "middle")
+                            .attr("font-size", "12px")
+                            .attr("fill", "black")
+                            .text(d.value);
+                    })
+                    .on("mouseout", function () {
+                        d3.select(this).attr("fill", "steelblue");
+                        g.select("#tooltip-text").remove();
+                    });
+
+                g.append("g")
+                    .attr("transform", `translate(0,${chartHeight})`)
+                    .call(d3.axisBottom(xScale));
+
+                g.append("g")
+                    .call(d3.axisLeft(yScale));
+            }
+
+            // Function to process VA data
+            function onMessage(event) {
+                if (!event || !event.data) return;
+                const vaData = event.data.data;  // Extract data array
+                const columns = event.data.columns; // Extract column names
+                
+                if (vaData.length === 0 || columns.length < 2) return;
+
+                // Extract the first column as labels and second column as values
+                const formattedData = vaData.map(row => ({
+                    label: row[0], 
+                    value: parseFloat(row[1])
+                }));
+
+                drawChart(formattedData); // Update chart
+            }
+
+            // Listen for data from SAS VA
+            if (window.addEventListener) {
+                window.addEventListener("message", onMessage, false);
+            } else {
+                window.attachEvent("onmessage", onMessage);
+            }
+        });
+    </script>
+</body>
+</html>
+
