@@ -1,0 +1,137 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    height: 100vh;
+    margin: 0;
+    background-color: #f8f8f8;
+    pointer-events: auto;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+#app-container {
+    width: 100vw;
+    height: 100vh;
+    background-color: #f8f8f8;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    margin-right: 10px;
+}
+
+#image-container {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    position: relative;
+}
+
+#toolbar {
+    height: 50px;
+    background-color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1;
+    border-top: 1px solid #e0e0e0;
+}
+
+.view-control {
+    margin: 0 5px;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.view-control:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    opacity: 0.5;
+}
+
+.view-control:active {
+    transform: scale(0.9);
+}
+
+#zoom-slider {
+    width: 100px;
+    opacity: 0.7;
+}
+
+#zoom-slider:hover {
+    opacity: 1;
+}
+
+#image-container img {
+    max-width: 100%;
+    max-height: 100%;
+    z-index: 1;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-origin: center center;
+    transform: translate(-50%, -50%);
+    object-fit: contain;
+}
+
+#image-container img.smooth {
+    transition: transform 0.3s ease;
+}
+
+#toolbar img {
+    position: static;
+    transform: none;
+    width: 30px;
+    height: 30px;
+    margin: 0 5px;
+}
+
+#error-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    max-width: 80%;
+    display: none;
+    pointer-events: none;
+    font-size: 16px;
+}
+
+#error-message h3 {
+    margin: 0 0 10px 0;
+    color: #e74c3c;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: -0.5px;
+}
+
+#error-message p {
+    margin: 0;
+    color: #333;
+    word-break: break-all;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+    background: rgba(255,255,255,0.7);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+#toolbar.disabled .view-control,
+#toolbar.disabled #zoom-slider {
+    opacity: 0.3;
+    cursor: default;
+    pointer-events: none;
+}
+
+#toolbar.disabled .view-control:hover {
+    background-color: transparent;
+} 
