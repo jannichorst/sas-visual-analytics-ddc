@@ -22,7 +22,7 @@ class ImageZoomApp extends HTMLElement {
                     flex: 1;
                     position: relative;
                     overflow: hidden;
-                    background-color: #eeeeee;
+                    background-color: #f8f8f8;
                 }
                 #image {
                     position: absolute;
