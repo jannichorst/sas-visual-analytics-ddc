@@ -10,6 +10,7 @@ class ImageZoomApp extends HTMLElement {
                     <div id="error-message">
                         <h3>Failed to load image</h3>
                         <p id="error-path"></p>
+                        <p id="error-details"></p>
                     </div>
                 </div>
                 <div id="toolbar">
@@ -77,6 +78,48 @@ class ImageZoomApp extends HTMLElement {
         this.imageContainer.addEventListener('mouseup', () => this.endDrag());
         this.imageContainer.addEventListener('mouseleave', () => this.endDrag());
         this.imageContainer.addEventListener('wheel', (e) => this.handleWheel(e));
+
+        // Add message event listener for VA data
+        if (window.addEventListener) {
+            window.addEventListener("message", (event) => this.onMessage(event), false);
+        } else {
+            window.attachEvent("onmessage", (event) => this.onMessage(event));
+        }
+    }
+
+    onMessage(event) {
+        if (!event || !event.data) return;
+        
+        const vaData = event.data.data;
+        
+        if (!vaData || !Array.isArray(vaData) || vaData.length === 0) {
+            this.showError("Invalid data format received");
+            return;
+        }
+
+        // Check if we have more than one row or column
+        if (vaData.length > 1 || (vaData[0] && vaData[0].length > 1)) {
+            this.showError("Too many parameters provided", JSON.stringify(vaData));
+            return;
+        }
+
+        // Extract the image name from the first cell
+        const imageName = vaData[0][0];
+        if (typeof imageName !== 'string') {
+            this.showError("Invalid image name format", JSON.stringify(vaData));
+            return;
+        }
+
+        this.loadImage(imageName);
+    }
+
+    showError(message, details = '') {
+        this.errorMessage.style.display = 'block';
+        this.image.style.display = 'none';
+        this.toolbar.classList.add('disabled');
+        this.errorPath.textContent = message;
+        const errorDetails = this.shadowRoot.querySelector('#error-details');
+        errorDetails.textContent = details ? `Raw data: ${details}` : '';
     }
 
     handleWheel(event) {
@@ -174,7 +217,7 @@ class ImageZoomApp extends HTMLElement {
 
     loadImage(imageName) {
         this.image.src = this.basePath + imageName;
-        // Reset error message when trying to load a new image
+        // Reset error messages when trying to load a new image
         this.errorMessage.style.display = 'none';
         this.image.style.display = 'none'; // Hide image until it loads successfully
         this.toolbar.classList.add('disabled'); // Disable toolbar while loading
