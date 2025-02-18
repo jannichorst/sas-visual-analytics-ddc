@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Zoom Application</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0;
+        }
+        
+        image-zoom-app {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        #app-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-color: #f8f8f8;
+            margin: 0;
+        }
+        
+        #image-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background-color: #f8f8f8;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #image {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform-origin: center;
+            max-width: 100%;
+            max-height: 100%;
+        }
+        #overlay {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform-origin: center;
+            pointer-events: auto;
+        }
+        #image.smooth, #overlay.smooth {
+            transition: transform 0.2s ease-out;
+        }
+        #toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border-top: 1px solid #ddd;
+        }
+        #toolbar.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .view-control {
+            cursor: pointer;
+            padding: 5px;
+        }
+        .view-control img {
+            width: 24px;
+            height: 24px;
+        }
+        #zoom-slider {
+            width: 150px;
+        }
+        #debug-panel {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border: 1px solid black;
+            z-index: 3;
+            font-size: 12px;
+            min-width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <image-zoom-app></image-zoom-app>
+    <!-- <div id="debug-panel"></div> -->
+
+    <script>
+        class ImageZoomApp extends HTMLElement {
+            constructor() {
+                super();
+                this.attachShadow({ mode: 'open' });
+                this.shadowRoot.innerHTML = `
+                    <style>
+                        :host {
+                            display: block;
+                            width: 100%;
+                            height: 100%;
+                            overflow: hidden;
+                        }
+                        #app-container {
+                            width: 100%;
+                            height: 100%;
+                            display: flex;
+                            flex-direction: column;
+                            overflow: hidden;
+                            background-color: #f8f8f8;
+                        }
+                        #image-container {
+                            flex: 1;
+                            position: relative;
+                            overflow: hidden;
+                            background-color: #f8f8f8;
+                            width: 100%;
+                            height: 100%;
+                        }
+                        #image {
+                            position: absolute;
+                            left: 50%;
+                            top: 50%;
+                            transform-origin: center;
+                            max-width: 100%;
+                            max-height: 100%;
+                            display: block;
+                        }
+                        #overlay {
+                            position: absolute;
+                            left: 50%;
+                            top: 50%;
+                            transform-origin: center;
+                            pointer-events: auto;
+                            width: 100%;
+                            height: 100%;
+                        }
+                        .view-control {
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            width: 50px;
+                            height: 50px;
+                        }
+                        
+                        .view-control:hover {
+                            cursor: pointer;
+                            opacity: 0.5;
+                        }
+                        .view-control:active {
+                            transform: scale(0.9);
+                        }
+                        #toolbar {
+                            height: 50px;
+                            background-color: lightblue;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            z-index: 1;
+                        }
+                        #toolbar img {
+                            margin: 0 5px;
+                            width: 30px;
+                            height: 30px;
+                        }
+                        #zoom-slider {
+                            width: 100px;
+                            opacity: 0.7;
+                        }
+                        #zoom-slider:hover {
+                            opacity: 1;
+                        }
+   
+                        img {
+                            max-width: 100%;
+                            max-height: 100%;
+                            z-index: 1;
+                            position: absolute;
+                        }
+                        img.smooth {
+                            transition: transform 0.3s ease;
+                        }
+                        canvas {
+                            position: absolute;
+                            z-index: 2;
+                            pointer-events: auto;
+                        }
+                        canvas.smooth {
+                            transition: transform 0.3s ease;
+                        }
+                    </style>
+                    <div id="app-container">
+                        <div id="image-container">
+                            <img id="image" src="images/img.jpg" alt="Placeholder Image">
+                            <canvas id="overlay"></canvas>
+                        </div>
+                        <div id="toolbar">
+                            <div class="view-control"><img id="zoom-out" src="icons/remove-outline.svg" alt="Zoom Out"></div>
+                            <input type="range" id="zoom-slider" min="20" max="300" value="100">
+                            <div class="view-control"><img id="zoom-in" src="icons/add-outline.svg" alt="Zoom In"></div>
+                            <div class="view-control"><img id="maximize" src="icons/expand-outline.svg" alt="Maximize"></div>
+                            <div class="view-control"><img id="minimize" src="icons/scan-outline.svg" alt="Minimize"></div>
+                            <div class="view-control"><img id="toggle-mode" src="icons/prism-outline.svg" alt="Toggle Mode"></div>
+                        </div>
+                    </div>
+                `;
+
+                this.zoomLevel = 1;
+                this.image = this.shadowRoot.querySelector('#image');
+                this.canvas = this.shadowRoot.querySelector('#overlay');
+                this.imageContainer = this.shadowRoot.querySelector('#image-container');
+                this.zoomInButton = this.shadowRoot.querySelector('#zoom-in');
+                this.zoomOutButton = this.shadowRoot.querySelector('#zoom-out');
+                this.zoomSlider = this.shadowRoot.querySelector('#zoom-slider');
+                this.maximizeButton = this.shadowRoot.querySelector('#maximize');
+                this.minimizeButton = this.shadowRoot.querySelector('#minimize');
+                this.toggleModeButton = this.shadowRoot.querySelector('#toggle-mode');
+                this.debugPanel = document.querySelector('#debug-panel');
+
+                this.imageX = 0;
+                this.imageY = 0;
+                this.isDragging = false;
+                this.startX = 0;
+                this.startY = 0;
+                this.isPointerMode = true;
+                this.spaceKeyHeld = false;
+
+                // Store the original image dimensions when image loads
+                this.image.addEventListener('load', () => {
+                    this.originalImageWidth = this.image.naturalWidth;
+                    this.originalImageHeight = this.image.naturalHeight;
+                    this.updateCanvasSize();
+                });
+                
+                // Define rectangles in relative coordinates (0-1 range)
+                this.rectangles = [
+                    { 
+                        x: 0.1, 
+                        y: 0.1, 
+                        width: 0.2, 
+                        height: 0.2, 
+                        hovered: false,
+                        class: "person",
+                        probability: 0.95
+                    },
+                    { 
+                        x: 0.4, 
+                        y: 0.4, 
+                        width: 0.3, 
+                        height: 0.3, 
+                        hovered: false,
+                        class: "car",
+                        probability: 0.87
+                    }
+                ];
+
+                this.zoomInButton.addEventListener('click', () => this.zoomIn());
+                this.zoomOutButton.addEventListener('click', () => this.zoomOut());
+                this.zoomSlider.addEventListener('input', () => this.sliderZoom());
+                this.maximizeButton.addEventListener('click', () => this.maximize());
+                this.minimizeButton.addEventListener('click', () => this.minimize());
+                this.toggleModeButton.addEventListener('click', () => this.toggleMode());
+                this.image.addEventListener('load', () => this.updateCanvasSize());
+                this.imageContainer.addEventListener('mousedown', (e) => this.startDrag(e));
+                this.imageContainer.addEventListener('mousemove', (e) => this.drag(e));
+                this.imageContainer.addEventListener('mouseup', () => this.endDrag());
+                this.imageContainer.addEventListener('mouseleave', () => this.endDrag());
+                this.imageContainer.addEventListener('wheel', (e) => this.handleWheel(e));
+                this.canvas.addEventListener('mousemove', (e) => this.handleCanvasHover(e));
+                document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+                document.addEventListener('keyup', (e) => this.handleKeyUp(e));
+
+                this.updateDebugPanel();
+
+                // Add ResizeObserver to handle window resizing
+                this.resizeObserver = new ResizeObserver(() => {
+                    this.updateCanvasSize();
+                });
+                this.resizeObserver.observe(this.imageContainer);
+            }
+
+            updateDebugPanel() {
+                if (this.debugPanel) {
+                    const debugInfo = `
+                        <div>Zoom Level: ${this.zoomLevel}</div>
+                        <div>Image X: ${this.imageX}</div>
+                        <div>Image Y: ${this.imageY}</div>
+                        <div>Image Width: ${this.image.clientWidth}</div>
+                        <div>Image Height: ${this.image.clientHeight}</div>
+                        <div>Canvas Width: ${this.canvas.width}</div>
+                        <div>Canvas Height: ${this.canvas.height}</div>
+                        ${this.rectangles.map((rect, index) => `
+                            <div>Rectangle ${index + 1} - X: ${rect.x}, Y: ${rect.y}, Width: ${rect.width}, Height: ${rect.height}, Hovered: ${rect.hovered}, Class: ${rect.class}, Probability: ${(rect.probability * 100).toFixed(1)}%</div>
+                        `).join('')}
+                    `;
+                    this.debugPanel.innerHTML = debugInfo;
+                }
+            }
+
+            toggleMode() {
+                this.isPointerMode = !this.isPointerMode;
+                this.updateModeIndicator();
+                this.updateDebugPanel();
+            }
+
+            handleKeyDown(event) {
+                if (event.key === ' ') {
+                    if (!this.spaceKeyHeld) {
+                        this.spaceKeyHeld = true;
+                        if (this.isPointerMode) {
+                            this.toggleMode();
+                        }
+                    }
+                    event.preventDefault();
+                }
+            }
+
+            handleKeyUp(event) {
+                if (event.key === ' ') {
+                    if (this.spaceKeyHeld) {
+                        this.spaceKeyHeld = false;
+                        if (!this.isPointerMode) {
+                            this.toggleMode();
+                        }
+                    }
+                    event.preventDefault();
+                }
+            }
+
+            handleWheel(event) {
+                event.preventDefault();
+                if (event.deltaY < 0) {
+                    this.zoomIn();
+                } else {
+                    this.zoomOut();
+                }
+                this.updateDebugPanel();
+            }
+
+            updateCanvasSize() {
+                const rect = this.image.getBoundingClientRect();
+                this.canvas.width = rect.width;
+                this.canvas.height = rect.height;
+                this.canvas.style.width = `${rect.width}px`;
+                this.canvas.style.height = `${rect.height}px`;
+                this.drawRectangles();
+                this.updateImageTransform(true);
+                this.updateDebugPanel();
+            }
+
+            drawRectangles() {
+                const ctx = this.canvas.getContext('2d');
+                ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                this.rectangles.forEach(rect => {
+                    // Calculate actual pixel coordinates based on current image size
+                    const scaledX = rect.x * this.canvas.width;
+                    const scaledY = rect.y * this.canvas.height;
+                    const scaledWidth = rect.width * this.canvas.width;
+                    const scaledHeight = rect.height * this.canvas.height;
+
+                    const borderWidth = 2;
+                    ctx.fillStyle = rect.hovered ? 'rgba(0, 0, 255, 0.5)' : 'rgba(0, 0, 0, 0)';
+                    ctx.strokeStyle = 'blue';
+                    ctx.lineWidth = borderWidth;
+                    ctx.fillRect(scaledX, scaledY, scaledWidth, scaledHeight);
+                    ctx.strokeRect(scaledX, scaledY, scaledWidth, scaledHeight);
+
+                    // Draw label box and text if hovered
+                    if (rect.hovered) {
+                        const labelText = `${rect.class}: ${(rect.probability * 100).toFixed(1)}%`;
+                        ctx.font = '14px Arial';
+                        const textMetrics = ctx.measureText(labelText);
+                        const padding = 4;
+                        const labelWidth = textMetrics.width + (padding * 2);
+                        const labelHeight = 20;
+
+                        // Draw label background and border
+                        ctx.fillStyle = 'blue';
+                        ctx.fillRect(
+                            scaledX, 
+                            scaledY - labelHeight - borderWidth, 
+                            labelWidth,
+                            labelHeight
+                        );
+                        // Add border to label box
+                        ctx.strokeRect(
+                            scaledX, 
+                            scaledY - labelHeight - borderWidth, 
+                            labelWidth,
+                            labelHeight
+                        );
+
+                        // Draw label text
+                        ctx.fillStyle = 'white';
+                        ctx.fillText(
+                            labelText, 
+                            scaledX + padding,
+                            scaledY - (labelHeight/4) - borderWidth
+                        );
+                    }
+                });
+            }
+
+            handleCanvasHover(event) {
+                if (!this.isPointerMode) return;
+
+                const rect = this.canvas.getBoundingClientRect();
+                const x = (event.clientX - rect.left) / this.zoomLevel;
+                const y = (event.clientY - rect.top) / this.zoomLevel;
+                
+                // Convert mouse coordinates to relative coordinates
+                const relativeX = x / this.canvas.width;
+                const relativeY = y / this.canvas.height;
+
+                let hoveredAny = false;
+                this.rectangles.forEach(rect => {
+                    if (relativeX >= rect.x && 
+                        relativeX <= rect.x + rect.width && 
+                        relativeY >= rect.y && 
+                        relativeY <= rect.y + rect.height) {
+                        rect.hovered = true;
+                        hoveredAny = true;
+                    } else {
+                        rect.hovered = false;
+                    }
+                });
+
+                this.drawRectangles();
+                this.updateDebugPanel();
+                
+                // Adding hover-specific details to the debug panel
+                if (this.debugPanel) {
+                    const hoverInfo = `
+                        <div>Relative Hover X: ${relativeX.toFixed(3)}</div>
+                        <div>Relative Hover Y: ${relativeY.toFixed(3)}</div>
+                        <div>Pixel Hover X: ${x.toFixed(2)}</div>
+                        <div>Pixel Hover Y: ${y.toFixed(2)}</div>
+                    `;
+                    this.debugPanel.innerHTML += hoverInfo;
+                }
+            }
+
+            zoomIn() {
+                this.zoomLevel = Math.min(3, this.zoomLevel + 0.15);
+                this.updateZoomSlider();
+                this.updateImageTransform(true);
+                this.updateDebugPanel();
+            }
+
+            zoomOut() {
+                this.zoomLevel = Math.max(0.2, this.zoomLevel - 0.15);
+                this.updateZoomSlider();
+                this.updateImageTransform(true);
+                this.updateDebugPanel();
+            }
+
+            sliderZoom() {
+                this.zoomLevel = this.zoomSlider.value / 100;
+                this.updateImageTransform(false);
+                this.updateDebugPanel();
+            }
+
+            maximize() {
+                const containerWidth = this.shadowRoot.querySelector('#image-container').clientWidth;
+                const containerHeight = this.shadowRoot.querySelector('#image-container').clientHeight;
+                const imageWidth = this.image.clientWidth;
+                const imageHeight = this.image.clientHeight;
+
+                const widthScale = containerWidth / imageWidth;
+                const heightScale = containerHeight / imageHeight;
+
+                this.zoomLevel = Math.max(widthScale, heightScale);
+                this.updateZoomSlider();
+                this.updateImageTransform(true);
+                this.updateDebugPanel();
+            }
+
+            minimize() {
+                this.zoomLevel = 1;
+                this.imageX = 0;
+                this.imageY = 0;
+                this.updateZoomSlider();
+                this.updateImageTransform(true);
+                this.updateDebugPanel();
+            }
+
+            startDrag(event) {
+                if (this.isPointerMode) return;
+
+                this.isDragging = true;
+                this.startX = event.clientX - this.imageX;
+                this.startY = event.clientY - this.imageY;
+                this.image.classList.remove('smooth');
+                this.canvas.classList.remove('smooth');
+                event.preventDefault();
+                this.updateDebugPanel();
+            }
+
+            drag(event) {
+                if (this.isPointerMode || !this.isDragging) return;
+
+                this.imageX = event.clientX - this.startX;
+                this.imageY = event.clientY - this.startY;
+                this.updateImageTransform(false);
+                this.updateDebugPanel();
+            }
+
+            endDrag() {
+                if (this.isPointerMode) return;
+
+                this.isDragging = false;
+                this.image.classList.add('smooth');
+                this.canvas.classList.add('smooth');
+                this.updateDebugPanel();
+            }
+
+            updateZoomSlider() {
+                this.zoomSlider.value = this.zoomLevel * 100;
+            }
+
+            updateImageTransform(smooth) {
+                const transformValue = `translate(-50%, -50%) scale(${this.zoomLevel}) translate(${this.imageX / this.zoomLevel}px, ${this.imageY / this.zoomLevel}px)`;
+                if (smooth) {
+                    this.image.classList.add('smooth');
+                    this.canvas.classList.add('smooth');
+                } else {
+                    this.image.classList.remove('smooth');
+                    this.canvas.classList.remove('smooth');
+                }
+                this.image.style.transform = transformValue;
+                this.canvas.style.transform = transformValue;
+                
+                // Match the canvas size to the image size
+                this.canvas.style.width = `${this.image.clientWidth}px`;
+                this.canvas.style.height = `${this.image.clientHeight}px`;
+                this.drawRectangles();
+                this.updateDebugPanel();
+            }
+
+            updateModeIndicator() {
+                if (this.isPointerMode) {
+                    this.toggleModeButton.src = 'prism-outline.svg';
+                    this.canvas.style.pointerEvents = 'auto';
+                } else {
+                    this.toggleModeButton.src = 'pricetag-outline.svg';
+                    this.canvas.style.pointerEvents = 'none';
+                }
+                this.updateDebugPanel();
+            }
+        }
+
+        customElements.define('image-zoom-app', ImageZoomApp);
+    </script>
+</body>
+</html>
