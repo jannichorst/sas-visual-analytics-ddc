@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Zoom Application</title>
+    <title>BBox Viewer</title>
     <style>
         html, body {
             margin: 0;
@@ -238,6 +238,32 @@
                 this.isPointerMode = true;
                 this.spaceKeyHeld = false;
 
+                // Color mapping system
+                this.colorCache = new Map();
+                // Predefined colors for common classes (like in skeleton example)
+                this.predefinedColors = {
+                    'person': 'rgb(31, 119, 180)',  // Blue
+                    'car': 'rgb(255, 127, 14)',     // Orange
+                    'dog': 'rgb(44, 160, 44)',      // Green
+                    'cat': 'rgb(214, 39, 40)',      // Red
+                    'bicycle': 'rgb(148, 103, 189)', // Purple
+                    'motorcycle': 'rgb(140, 86, 75)', // Brown
+                };
+                // Additional distinct colors for unknown classes
+                this.fallbackColors = [
+                    'rgb(227, 119, 194)', // Pink
+                    'rgb(127, 127, 127)', // Gray
+                    'rgb(188, 189, 34)',  // Yellow-green
+                    'rgb(23, 190, 207)',  // Cyan
+                    'rgb(141, 211, 199)', // Light blue-green
+                    'rgb(255, 255, 179)', // Light yellow
+                    'rgb(190, 186, 218)', // Light purple
+                    'rgb(251, 128, 114)', // Salmon
+                    'rgb(128, 177, 211)', // Steel blue
+                    'rgb(253, 180, 98)',  // Light orange
+                ];
+                this.nextFallbackColorIndex = 0;
+
                 // Store the original image dimensions when image loads
                 this.image.addEventListener('load', () => {
                     this.originalImageWidth = this.image.naturalWidth;
@@ -264,6 +290,15 @@
                         hovered: false,
                         class: "car",
                         probability: 0.87
+                    },
+                    { 
+                        x: 0.8, 
+                        y: 0.8, 
+                        width: 0.1, 
+                        height: 0.1, 
+                        hovered: false,
+                        class: "dog",
+                        probability: 0.55
                     }
                 ];
 
@@ -361,6 +396,27 @@
                 this.updateDebugPanel();
             }
 
+            getColorForClass(className) {
+                // Check if we already have a color for this class
+                if (this.colorCache.has(className)) {
+                    return this.colorCache.get(className);
+                }
+
+                let color;
+                // Check if we have a predefined color for this class
+                if (className in this.predefinedColors) {
+                    color = this.predefinedColors[className];
+                } else {
+                    // Use the next fallback color
+                    color = this.fallbackColors[this.nextFallbackColorIndex];
+                    this.nextFallbackColorIndex = (this.nextFallbackColorIndex + 1) % this.fallbackColors.length;
+                }
+
+                // Cache the color for this class
+                this.colorCache.set(className, color);
+                return color;
+            }
+
             drawRectangles() {
                 const ctx = this.canvas.getContext('2d');
                 ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -373,8 +429,9 @@
                     const scaledHeight = rect.height * this.canvas.height;
 
                     const borderWidth = 2;
-                    ctx.fillStyle = rect.hovered ? 'rgba(0, 0, 255, 0.5)' : 'rgba(0, 0, 0, 0)';
-                    ctx.strokeStyle = 'blue';
+                    const color = this.getColorForClass(rect.class);
+                    ctx.fillStyle = rect.hovered ? `${color.replace('rgb', 'rgba').replace(')', ', 0.5)')}` : 'rgba(0, 0, 0, 0)';
+                    ctx.strokeStyle = color;
                     ctx.lineWidth = borderWidth;
                     ctx.fillRect(scaledX, scaledY, scaledWidth, scaledHeight);
                     ctx.strokeRect(scaledX, scaledY, scaledWidth, scaledHeight);
@@ -389,7 +446,7 @@
                         const labelHeight = 20;
 
                         // Draw label background and border
-                        ctx.fillStyle = 'blue';
+                        ctx.fillStyle = color;
                         ctx.fillRect(
                             scaledX, 
                             scaledY - labelHeight - borderWidth, 
