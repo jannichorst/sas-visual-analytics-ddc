@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Zoom Application</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            pointer-events: auto;
+        }
+        #app-container {
+            width: 100%;
+            height: 100%;
+            background-color: lightgrey;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            margin-right: 10px;
+        }
+        #image-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+        #toolbar {
+            height: 50px;
+            background-color: lightblue;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+        }
+        #toolbar .view-control {
+            margin: 0 5px;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        #toolbar .view-control:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        #toolbar .view-control:active {
+            transform: scale(0.9);
+        }
+        img {
+            max-width: 100%;
+            max-height: 100%;
+            z-index: 1;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-origin: center center;
+            transform: translate(-50%, -50%);
+            object-fit: contain;
+        }
+        img.smooth {
+            transition: transform 0.3s ease;
+        }
+        #image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            z-index: 1;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-origin: center center;
+            transform: translate(-50%, -50%);
+            object-fit: contain;
+        }
+        #image-container img.smooth {
+            transition: transform 0.3s ease;
+        }
+        #toolbar img {
+            position: static;
+            transform: none;
+            width: 30px;
+            height: 30px;
+            margin: 0 5px;
+        }
+        canvas {
+            position: absolute;
+            z-index: 2;
+            pointer-events: auto;
+        }
+        canvas.smooth {
+            transition: transform 0.3s ease;
+        }
+        #debug-panel {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border: 1px solid black;
+            z-index: 3;
+            font-size: 12px;
+            min-width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <image-zoom-app></image-zoom-app>
+    <!-- <div id="debug-panel"></div> -->
+
+    <script>
+        class ImageZoomApp extends HTMLElement {
+            constructor() {
+                super();
+                this.attachShadow({ mode: 'open' });
+                this.basePath = './images/'; // Base path for images - can be configured
+                this.shadowRoot.innerHTML = `
+                    <div id="app-container">
+                        <div id="image-container">
+                            <img id="image" src="${this.basePath}img.jpg" alt="Placeholder Image" style="object-fit: contain;">
+                        </div>
+                        <div id="toolbar">
+                            <div class="view-control"><img id="zoom-out" src="icons/remove-outline.svg" alt="Zoom Out"></div>
+                            <input type="range" id="zoom-slider" min="20" max="300" value="100">
+                            <div class="view-control"><img id="zoom-in" src="icons/add-outline.svg" alt="Zoom In"></div>
+                            <div class="view-control"><img id="maximize" src="icons/expand-outline.svg" alt="Maximize"></div>
+                            <div class="view-control"><img id="minimize" src="icons/scan-outline.svg" alt="Minimize"></div>
+                        </div>
+                    </div>
+                    <style>
+                        .view-control {
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            width: 50px;
+                            height: 50px;
+                        }
+                        
+                        .view-control:hover {
+                            cursor: pointer;
+                            opacity: 0.5;
+                        }
+                        .view-control:active {
+                            transform: scale(0.9);
+                        }
+                        
+                        #app-container {
+                            width: 100vw;
+                            height: 100vh;
+                            background-color: lightgrey;
+                            overflow: hidden;
+                            display: flex;
+                            flex-direction: column;
+                            position: relative;
+                            margin-right: 10px;
+                        }
+                        #image-container {
+                            flex-grow: 1;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            overflow: hidden;
+                            position: relative;
+                        }
+                        #toolbar {
+                            height: 50px;
+                            background-color: lightblue;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            z-index: 1;
+                        }
+                        #toolbar img {
+                            position: static;
+                            transform: none;
+                            width: 30px;
+                            height: 30px;
+                            margin: 0 5px;
+                        }
+                        #zoom-slider {
+                            width: 100px;
+                            opacity: 0.7;
+                        }
+                        #zoom-slider:hover {
+                            opacity: 1;
+                        }
+   
+                        #image-container img {
+                            max-width: 100%;
+                            max-height: 100%;
+                            z-index: 1;
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
+                            transform-origin: center center;
+                            transform: translate(-50%, -50%);
+                            object-fit: contain;
+                        }
+                        #image-container img.smooth {
+                            transition: transform 0.3s ease;
+                        }
+                    </style>
+                `;
+
+                this.zoomLevel = 1;
+                this.image = this.shadowRoot.querySelector('#image');
+                this.imageContainer = this.shadowRoot.querySelector('#image-container');
+                this.zoomInButton = this.shadowRoot.querySelector('#zoom-in');
+                this.zoomOutButton = this.shadowRoot.querySelector('#zoom-out');
+                this.zoomSlider = this.shadowRoot.querySelector('#zoom-slider');
+                this.maximizeButton = this.shadowRoot.querySelector('#maximize');
+                this.minimizeButton = this.shadowRoot.querySelector('#minimize');
+
+                this.imageX = 0;
+                this.imageY = 0;
+                this.isDragging = false;
+                this.startX = 0;
+                this.startY = 0;
+
+                this.zoomInButton.addEventListener('click', () => this.zoomIn());
+                this.zoomOutButton.addEventListener('click', () => this.zoomOut());
+                this.zoomSlider.addEventListener('input', () => this.sliderZoom());
+                this.maximizeButton.addEventListener('click', () => this.maximize());
+                this.minimizeButton.addEventListener('click', () => this.minimize());
+                this.image.addEventListener('load', () => this.updateImageTransform(true));
+                this.imageContainer.addEventListener('mousedown', (e) => this.startDrag(e));
+                this.imageContainer.addEventListener('mousemove', (e) => this.drag(e));
+                this.imageContainer.addEventListener('mouseup', () => this.endDrag());
+                this.imageContainer.addEventListener('mouseleave', () => this.endDrag());
+                this.imageContainer.addEventListener('wheel', (e) => this.handleWheel(e));
+            }
+
+            handleWheel(event) {
+                event.preventDefault();
+                if (event.deltaY < 0) {
+                    this.zoomIn();
+                } else {
+                    this.zoomOut();
+                }
+            }
+
+            zoomIn() {
+                this.zoomLevel = Math.min(3, this.zoomLevel + 0.15);
+                this.updateZoomSlider();
+                this.updateImageTransform(true);
+            }
+
+            zoomOut() {
+                this.zoomLevel = Math.max(0.2, this.zoomLevel - 0.15);
+                this.updateZoomSlider();
+                this.updateImageTransform(true);
+            }
+
+            sliderZoom() {
+                this.zoomLevel = this.zoomSlider.value / 100;
+                this.updateImageTransform(false);
+            }
+
+            maximize() {
+                const containerWidth = this.imageContainer.clientWidth;
+                const containerHeight = this.imageContainer.clientHeight;
+                const rect = this.image.getBoundingClientRect();
+                const imageWidth = rect.width / this.zoomLevel;
+                const imageHeight = rect.height / this.zoomLevel;
+
+                if (imageWidth === 0 || imageHeight === 0) return; // Image not loaded yet
+
+                const widthScale = containerWidth / imageWidth;
+                const heightScale = containerHeight / imageHeight;
+
+                // Use the larger scale to ensure the image fills the container
+                this.zoomLevel = Math.max(widthScale, heightScale);
+                this.imageX = 0;
+                this.imageY = 0;
+                this.updateZoomSlider();
+                this.updateImageTransform(true);
+            }
+
+            minimize() {
+                this.zoomLevel = 1;
+                this.imageX = 0;
+                this.imageY = 0;
+                this.updateZoomSlider();
+                this.updateImageTransform(true);
+            }
+
+            startDrag(event) {
+                this.isDragging = true;
+                this.startX = event.clientX - this.imageX;
+                this.startY = event.clientY - this.imageY;
+                this.image.classList.remove('smooth');
+                event.preventDefault();
+            }
+
+            drag(event) {
+                if (!this.isDragging) return;
+                this.imageX = event.clientX - this.startX;
+                this.imageY = event.clientY - this.startY;
+                this.updateImageTransform(false);
+            }
+
+            endDrag() {
+                this.isDragging = false;
+                this.image.classList.add('smooth');
+            }
+
+            updateZoomSlider() {
+                this.zoomSlider.value = this.zoomLevel * 100;
+            }
+
+            updateImageTransform(smooth) {
+                const transformValue = `translate(-50%, -50%) scale(${this.zoomLevel}) translate(${this.imageX / this.zoomLevel}px, ${this.imageY / this.zoomLevel}px)`;
+                if (smooth) {
+                    this.image.classList.add('smooth');
+                } else {
+                    this.image.classList.remove('smooth');
+                }
+                this.image.style.transform = transformValue;
+            }
+
+            loadImage(imageName) {
+                this.image.src = this.basePath + imageName;
+            }
+
+            setBasePath(path) {
+                this.basePath = path.endsWith('/') ? path : path + '/';
+                const currentImage = this.image.src.split('/').pop();
+                this.loadImage(currentImage);
+            }
+        }
+
+        customElements.define('image-zoom-app', ImageZoomApp);
+    </script>
+</body>
+</html>
