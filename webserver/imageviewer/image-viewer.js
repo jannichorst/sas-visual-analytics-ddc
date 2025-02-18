@@ -22,6 +22,7 @@ class ImageZoomApp extends HTMLElement {
                     flex: 1;
                     position: relative;
                     overflow: hidden;
+                    background-color: #eeeeee;
                 }
                 #image {
                     position: absolute;
@@ -49,6 +50,7 @@ class ImageZoomApp extends HTMLElement {
                     padding: 10px;
                     gap: 10px;
                     background: rgba(255, 255, 255, 0.9);
+                    border-top: 1px solid #ddd;
                 }
                 #toolbar.disabled {
                     opacity: 0.5;
@@ -160,14 +162,14 @@ class ImageZoomApp extends HTMLElement {
 
         // Check if we have more than one row or column
         if (vaData.length > 1 || (vaData[0] && vaData[0].length > 1)) {
-            this.showError("Too many parameters provided", JSON.stringify(vaData));
+            this.showError("Please select a single image to view", "Multiple values were provided: " + JSON.stringify(vaData));
             return;
         }
 
         // Extract the image name from the first cell
         const imageName = vaData[0][0];
         if (typeof imageName !== 'string') {
-            this.showError("Invalid image name format", JSON.stringify(vaData));
+            this.showError("Please provide a valid image name", JSON.stringify(vaData));
             return;
         }
 
