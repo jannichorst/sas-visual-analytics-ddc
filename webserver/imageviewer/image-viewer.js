@@ -4,6 +4,68 @@ class ImageZoomApp extends HTMLElement {
         this.attachShadow({ mode: 'open' });
         this.basePath = './images/'; // Base path for images - can be configured
         this.shadowRoot.innerHTML = `
+            <style>
+                :host {
+                    display: block;
+                    width: 100%;
+                    height: 100%;
+                    overflow: hidden;
+                }
+                #app-container {
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                }
+                #image-container {
+                    flex: 1;
+                    position: relative;
+                    overflow: hidden;
+                }
+                #image {
+                    position: absolute;
+                    left: 50%;
+                    top: 50%;
+                    transform-origin: center;
+                    max-width: 100%;
+                    max-height: 100%;
+                }
+                #image.smooth {
+                    transition: transform 0.2s ease-out;
+                }
+                #error-message {
+                    display: none;
+                    position: absolute;
+                    left: 50%;
+                    top: 50%;
+                    transform: translate(-50%, -50%);
+                    text-align: center;
+                }
+                #toolbar {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 10px;
+                    gap: 10px;
+                    background: rgba(255, 255, 255, 0.9);
+                }
+                #toolbar.disabled {
+                    opacity: 0.5;
+                    pointer-events: none;
+                }
+                .view-control {
+                    cursor: pointer;
+                    padding: 5px;
+                }
+                .view-control img {
+                    width: 24px;
+                    height: 24px;
+                }
+                #zoom-slider {
+                    width: 150px;
+                }
+            </style>
             <div id="app-container">
                 <div id="image-container">
                     <img id="image" style="display: none; object-fit: contain;">
@@ -21,7 +83,6 @@ class ImageZoomApp extends HTMLElement {
                     <div class="view-control"><img id="minimize" src="icons/scan-outline.svg" alt="Minimize"></div>
                 </div>
             </div>
-            <link rel="stylesheet" href="styles.css">
         `;
 
         this.initializeProperties();
