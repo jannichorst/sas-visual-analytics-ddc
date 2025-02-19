@@ -742,9 +742,9 @@
                 // Reset transform and scale for DPR
                 ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
                 
-                // Get the actual displayed image dimensions
-                const displayedWidth = this.image.naturalWidth;
-                const displayedHeight = this.image.naturalHeight;
+                // Get the actual displayed dimensions of the canvas
+                const displayedWidth = this.canvas.width / dpr;
+                const displayedHeight = this.canvas.height / dpr;
 
                 this.rectangles.forEach(rect => {
                     // Convert normalized coordinates (0-1) to actual pixel coordinates
