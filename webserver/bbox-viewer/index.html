@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BBox Viewer</title>
     <style>
+        /* Reset and base styles */
         html, body {
             margin: 0;
             padding: 0;
@@ -25,184 +26,6 @@
             height: 100%;
             display: block;
         }
-        
-        #error-message {
-            display: none;
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            z-index: 3;
-            font-family: Arial, sans-serif;
-            min-width: 400px;
-        }
-        
-        #error-message.error {
-            background: none;
-            padding: 20px;
-        }
-        
-        #error-message.neutral {
-            background: none;
-            box-shadow: none;
-            padding: 20px;
-        }
-        
-        #error-message h1 {
-            color: #d32f2f;
-            margin: 0 0 20px 0;
-            font-size: 28px;
-        }
-        
-        #error-message .error-path {
-            color: #666;
-            font-size: 14px;
-            word-break: break-all;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 8px;
-            border-radius: 4px;
-            display: inline-block;
-        }
-        
-        #error-message h2 {
-            margin-top: 0;
-            margin-bottom: 15px;
-            font-size: 20px;
-        }
-        
-        #error-message.error h2 {
-            color: #d32f2f;
-        }
-        
-        #error-message.neutral h2 {
-            color: #333;
-            display: block !important;
-            margin-bottom: 30px;
-            font-size: 24px;
-        }
-        
-        #error-text {
-            color: #666;
-            margin: 10px 0;
-            font-size: 14px;
-        }
-        
-        #error-details {
-            background: #fff;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
-            font-family: monospace;
-            white-space: pre-wrap;
-            text-align: left;
-            font-size: 12px;
-            color: #666;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        
-        .mapping-info {
-            margin-top: 0;
-            color: #666;
-            text-align: left;
-            padding: 0;
-            font-size: 13px;
-            background: none;
-            box-shadow: none;
-        }
-        
-        .mapping-info h4 {
-            color: #888;
-            font-size: 14px;
-            margin: 0 0 15px 0;
-            font-weight: normal;
-        }
-        
-        .base-path-info {
-            color: #888;
-            font-size: 12px;
-            margin-top: 15px;
-            text-align: left;
-        }
-        
-        .mapping-toggle {
-            display: none;
-        }
-        
-        .mapping-details {
-            display: table !important;
-            margin-top: 0;
-            border-spacing: 0;
-            width: 100%;
-            background: none;
-            border-radius: 0;
-            box-shadow: none;
-        }
-        
-        .mapping-row {
-            display: table-row;
-        }
-        
-        .mapping-row:nth-child(even) {
-            background: none;
-        }
-        
-        .mapping-label {
-            display: table-cell;
-            padding: 6px 0;
-            font-weight: 500;
-            color: #888;
-            width: 60px;
-            white-space: nowrap;
-            font-size: 12px;
-        }
-        
-        .mapping-description {
-            display: table-cell;
-            padding: 6px 0 6px 12px;
-            color: #888;
-            font-size: 12px;
-        }
-        
-        .view-control {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 50px;
-            height: 50px;
-            cursor: pointer;
-        }
-        .view-control:hover {
-            opacity: 0.5;
-        }
-        .view-control:active {
-            transform: scale(0.9);
-        }
-        .view-control img {
-            width: 30px;
-            height: 30px;
-            margin: 0 5px;
-        }
-        #toolbar {
-            height: 50px;
-            background-color: white;
-            border-top: 2px solid #ddd;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1;
-        }
-        #toolbar.hidden {
-            display: none;
-        }
-        #zoom-slider {
-            width: 100px;
-            opacity: 0.7;
-        }
-        #zoom-slider:hover {
-            opacity: 1;
-        }
     </style>
 </head>
 <body>
@@ -214,10 +37,9 @@
             constructor() {
                 super();
                 this.attachShadow({ mode: 'open' });
-                this.basePath = './images/'; // Base path for images - can be configured
-                this.disableInteraction = false; // New property to control interaction
+                this.basePath = './images/';
+                this.disableInteraction = false;
                 
-                // Define column mapping for easier adjustments
                 this.columnMapping = {
                     image: 'image',
                     x: 'x',
@@ -231,12 +53,15 @@
                 
                 this.shadowRoot.innerHTML = `
                     <style>
+                        /* Component root styles */
                         :host {
                             display: block;
                             width: 100%;
                             height: 100%;
                             overflow: hidden;
                         }
+
+                        /* Layout containers */
                         #app-container {
                             width: 100%;
                             height: 100%;
@@ -245,6 +70,7 @@
                             overflow: hidden;
                             background-color: #f8f8f8;
                         }
+
                         #image-container {
                             flex: 1;
                             position: relative;
@@ -252,6 +78,8 @@
                             width: 100%;
                             height: 100%;
                         }
+
+                        /* Image and overlay styles */
                         #image, #overlay {
                             position: absolute;
                             left: 50%;
@@ -260,6 +88,7 @@
                             max-width: 100%;
                             max-height: 100%;
                         }
+
                         #overlay {
                             pointer-events: auto;
                             width: 100%;
@@ -272,9 +101,12 @@
                             image-rendering: crisp-edges;
                             -ms-interpolation-mode: nearest-neighbor;
                         }
+
                         .smooth {
                             transition: transform 0.3s ease;
                         }
+
+                        /* Error message styles */
                         #error-message {
                             display: none;
                             position: absolute;
@@ -285,15 +117,42 @@
                             z-index: 3;
                             font-family: Arial, sans-serif;
                             min-width: 400px;
+                            padding: 20px;
                         }
-                        
-                        #error-message h1 {
+
+                        #error-message.error,
+                        #error-message.neutral {
+                            background: none;
+                        }
+
+                        #error-message.neutral {
+                            box-shadow: none;
+                        }
+
+                        #error-message h1,
+                        #error-message.error h2 {
                             color: #d32f2f;
                             margin: 0 0 20px 0;
+                        }
+
+                        #error-message h1 {
                             font-size: 28px;
                         }
-                        
-                        #error-message .error-path {
+
+                        #error-message h2 {
+                            margin-top: 0;
+                            margin-bottom: 15px;
+                            font-size: 20px;
+                        }
+
+                        #error-message.neutral h2 {
+                            color: #333;
+                            display: block !important;
+                            margin-bottom: 30px;
+                            font-size: 24px;
+                        }
+
+                        .error-path {
                             color: #666;
                             font-size: 14px;
                             word-break: break-all;
@@ -301,55 +160,31 @@
                             border-radius: 4px;
                             display: inline-block;
                         }
-                        
-                        #error-message.error {
-                            background: none;
-                            padding: 20px;
-                        }
-                        
-                        #error-message.neutral {
-                            background: none;
-                            box-shadow: none;
-                            padding: 20px;
-                        }
-                        
-                        #error-message h2 {
-                            margin-top: 0;
-                            margin-bottom: 15px;
-                            font-size: 20px;
-                        }
-                        
-                        #error-message.error h2 {
-                            color: #d32f2f;
-                        }
-                        
-                        #error-message.neutral h2 {
-                            color: #333;
-                            display: block !important;
-                            margin-bottom: 30px;
-                            font-size: 24px;
-                        }
-                        
-                        #error-text {
+
+                        /* Common text styles */
+                        #error-text,
+                        #error-details {
                             color: #666;
                             margin: 10px 0;
+                        }
+
+                        #error-text {
                             font-size: 14px;
                         }
-                        
+
                         #error-details {
                             background: #fff;
                             padding: 10px;
                             border-radius: 4px;
-                            margin: 10px 0;
                             font-family: monospace;
                             white-space: pre-wrap;
                             text-align: left;
                             font-size: 12px;
-                            color: #666;
                             max-height: 200px;
                             overflow-y: auto;
                         }
-                        
+
+                        /* Mapping styles */
                         .mapping-info {
                             margin-top: 0;
                             color: #666;
@@ -359,21 +194,26 @@
                             background: none;
                             box-shadow: none;
                         }
-                        
+
                         .mapping-info h4 {
                             color: #888;
                             font-size: 14px;
                             margin: 0 0 15px 0;
                             font-weight: normal;
                         }
-                        
+
                         .base-path-info {
                             color: #888;
                             font-size: 12px;
                             margin-top: 15px;
                             text-align: left;
                         }
-                        
+
+                        .mapping-toggle {
+                            display: none;
+                        }
+
+                        /* Mapping table styles */
                         .mapping-details {
                             display: table !important;
                             margin-top: 0;
@@ -383,32 +223,30 @@
                             border-radius: 0;
                             box-shadow: none;
                         }
-                        
+
                         .mapping-row {
                             display: table-row;
                         }
-                        
-                        .mapping-row:nth-child(even) {
-                            background: none;
-                        }
-                        
-                        .mapping-label {
-                            display: table-cell;
-                            padding: 4px 0;
-                            font-weight: 500;
-                            color: #888;
-                            width: 60px;
-                            white-space: nowrap;
-                            font-size: 12px;
-                        }
-                        
+
+                        .mapping-label,
                         .mapping-description {
                             display: table-cell;
-                            padding: 4px 0 4px 12px;
+                            padding: 4px 0;
                             color: #888;
                             font-size: 12px;
                         }
-                        
+
+                        .mapping-label {
+                            font-weight: 500;
+                            width: 60px;
+                            white-space: nowrap;
+                        }
+
+                        .mapping-description {
+                            padding-left: 12px;
+                        }
+
+                        /* Control styles */
                         .view-control {
                             display: flex;
                             align-items: center;
@@ -417,17 +255,22 @@
                             height: 50px;
                             cursor: pointer;
                         }
+
                         .view-control:hover {
                             opacity: 0.5;
                         }
+
                         .view-control:active {
                             transform: scale(0.9);
                         }
+
                         .view-control img {
                             width: 30px;
                             height: 30px;
                             margin: 0 5px;
                         }
+
+                        /* Toolbar styles */
                         #toolbar {
                             height: 50px;
                             background-color: white;
@@ -437,13 +280,16 @@
                             align-items: center;
                             z-index: 1;
                         }
+
                         #toolbar.hidden {
                             display: none;
                         }
+
                         #zoom-slider {
                             width: 100px;
                             opacity: 0.7;
                         }
+
                         #zoom-slider:hover {
                             opacity: 1;
                         }
