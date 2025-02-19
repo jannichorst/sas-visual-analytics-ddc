@@ -137,17 +137,17 @@
         
         .mapping-label {
             display: table-cell;
-            padding: 8px 12px;
-            font-weight: 600;
-            color: #444;
-            width: 80px;
+            padding: 6px 12px;
+            font-weight: 500;
+            color: #888;
+            width: 60px;
             white-space: nowrap;
             font-size: 12px;
         }
         
         .mapping-description {
             display: table-cell;
-            padding: 8px 12px;
+            padding: 6px 12px;
             color: #888;
             font-size: 12px;
         }
@@ -369,17 +369,17 @@
                         
                         .mapping-label {
                             display: table-cell;
-                            padding: 8px 12px;
-                            font-weight: 600;
-                            color: #444;
-                            width: 80px;
+                            padding: 6px 12px;
+                            font-weight: 500;
+                            color: #888;
+                            width: 60px;
                             white-space: nowrap;
                             font-size: 12px;
                         }
                         
                         .mapping-description {
                             display: table-cell;
-                            padding: 8px 12px;
+                            padding: 6px 12px;
                             color: #888;
                             font-size: 12px;
                         }
@@ -569,9 +569,9 @@
                 
                 if (type === 'neutral' && message === "Select an image to view") {
                     errorTitle.style.display = 'none'; // Hide the error title
-                    mappingInfo.style.display = 'block';
                     this.errorText.style.display = 'none';
                     this.errorDetails.style.display = 'none';
+                    mappingInfo.style.display = 'block';
                     // Make sure to call updateMappingExplanations
                     this.updateMappingExplanations();
                 } else {
