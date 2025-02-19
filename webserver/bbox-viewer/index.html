@@ -4,9 +4,97 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BBox Viewer</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0;
+        }
+        
+        bbox-viewer-app {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        #error-message {
+            display: none;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 3;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        #error-message.error {
+            background: rgba(255, 235, 235, 0.9);
+        }
+        
+        #error-message.neutral {
+            background: rgba(255, 255, 255, 0.9);
+        }
+        
+        #error-message h3 {
+            margin-top: 0;
+        }
+        
+        #error-message.neutral h3 {
+            display: none;
+        }
+        
+        .mapping-info {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #666;
+            text-align: left;
+        }
+        
+        .mapping-toggle {
+            color: #666;
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 0.8em;
+            margin-top: 10px;
+            display: block;
+        }
+        
+        .mapping-details {
+            display: none;
+            margin-top: 10px;
+        }
+        
+        .mapping-details.show {
+            display: block;
+        }
+        
+        .mapping-row {
+            margin: 5px 0;
+            font-size: 0.8em;
+        }
+        
+        .mapping-label {
+            font-weight: bold;
+            color: #444;
+        }
+    </style>
 </head>
 <body>
     <bbox-viewer-app></bbox-viewer-app>
+    <!-- <div id="debug-panel"></div> -->
 
     <script>
         class BboxViewerApp extends HTMLElement {
@@ -30,31 +118,12 @@
                 
                 this.shadowRoot.innerHTML = `
                     <style>
-                        /* Root styles */
                         :host {
                             display: block;
                             width: 100%;
                             height: 100%;
                             overflow: hidden;
                         }
-
-                        /* Global page styles */
-                        html, body {
-                            margin: 0;
-                            padding: 0;
-                            width: 100%;
-                            height: 100%;
-                            overflow: hidden;
-                        }
-
-                        body {
-                            display: flex;
-                            justify-content: center;
-                            align-items: center;
-                            background-color: #f0f0f0;
-                        }
-
-                        /* Container styles */
                         #app-container {
                             width: 100%;
                             height: 100%;
@@ -63,7 +132,6 @@
                             overflow: hidden;
                             background-color: #f8f8f8;
                         }
-
                         #image-container {
                             flex: 1;
                             position: relative;
@@ -71,8 +139,6 @@
                             width: 100%;
                             height: 100%;
                         }
-
-                        /* Image and overlay styles */
                         #image, #overlay {
                             position: absolute;
                             left: 50%;
@@ -81,7 +147,6 @@
                             max-width: 100%;
                             max-height: 100%;
                         }
-
                         #overlay {
                             pointer-events: auto;
                             width: 100%;
@@ -94,8 +159,28 @@
                             image-rendering: crisp-edges;
                             -ms-interpolation-mode: nearest-neighbor;
                         }
-
-                        /* Toolbar styles */
+                        .smooth {
+                            transition: transform 0.3s ease;
+                        }
+                        .view-control {
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            width: 50px;
+                            height: 50px;
+                            cursor: pointer;
+                        }
+                        .view-control:hover {
+                            opacity: 0.5;
+                        }
+                        .view-control:active {
+                            transform: scale(0.9);
+                        }
+                        .view-control img {
+                            width: 30px;
+                            height: 30px;
+                            margin: 0 5px;
+                        }
                         #toolbar {
                             height: 50px;
                             background-color: white;
@@ -105,113 +190,26 @@
                             align-items: center;
                             z-index: 1;
                         }
-
                         #toolbar.hidden {
                             display: none;
                         }
-
-                        .view-control {
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            width: 50px;
-                            height: 50px;
-                            cursor: pointer;
-                        }
-
-                        .view-control:hover {
-                            opacity: 0.5;
-                        }
-
-                        .view-control:active {
-                            transform: scale(0.9);
-                        }
-
-                        .view-control img {
-                            width: 30px;
-                            height: 30px;
-                            margin: 0 5px;
-                        }
-
                         #zoom-slider {
                             width: 100px;
                             opacity: 0.7;
                         }
-
                         #zoom-slider:hover {
                             opacity: 1;
                         }
-
-                        /* Error message styles */
-                        #error-message {
-                            display: none;
-                            position: absolute;
-                            left: 50%;
-                            top: 50%;
-                            transform: translate(-50%, -50%);
-                            text-align: center;
+                        #debug-panel {
+                            background: rgba(255, 255, 255, 0.8);
+                            padding: 10px;
+                            border: 1px solid black;
                             z-index: 3;
-                            background: rgba(255, 255, 255, 0.9);
-                            padding: 20px;
-                            border-radius: 5px;
-                            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-                        }
-
-                        #error-message.error {
-                            background: rgba(255, 235, 235, 0.9);
-                        }
-
-                        #error-message.neutral {
-                            background: rgba(255, 255, 255, 0.9);
-                        }
-
-                        #error-message h3 {
-                            margin-top: 0;
-                        }
-
-                        #error-message.neutral h3 {
-                            display: none;
-                        }
-
-                        /* Mapping info styles */
-                        .mapping-info {
-                            margin-top: 15px;
-                            font-size: 0.9em;
-                            color: #666;
-                            text-align: left;
-                        }
-
-                        .mapping-toggle {
-                            color: #666;
-                            text-decoration: underline;
-                            cursor: pointer;
-                            font-size: 0.8em;
-                            margin-top: 10px;
-                            display: block;
-                        }
-
-                        .mapping-details {
-                            display: none;
-                            margin-top: 10px;
-                        }
-
-                        .mapping-details.show {
-                            display: block;
-                        }
-
-                        .mapping-row {
-                            margin: 5px 0;
-                            font-size: 0.8em;
-                        }
-
-                        .mapping-label {
-                            font-weight: bold;
-                            color: #444;
-                        }
-
-                        /* Animation styles */
-                        .smooth {
-                            transition: transform 0.3s ease;
+                            font-size: 12px;
+                            min-width: 200px;
+                            position: absolute;
+                            top: 10px;
+                            left: 10px;
                         }
                     </style>
                     <div id="app-container">
@@ -247,6 +245,7 @@
                 this.zoomSlider = this.shadowRoot.querySelector('#zoom-slider');
                 this.maximizeButton = this.shadowRoot.querySelector('#maximize');
                 this.minimizeButton = this.shadowRoot.querySelector('#minimize');
+                this.debugPanel = document.querySelector('#debug-panel');
                 this.errorMessage = this.shadowRoot.querySelector('#error-message');
                 this.errorText = this.shadowRoot.querySelector('#error-text');
                 this.errorDetails = this.shadowRoot.querySelector('#error-details');
@@ -317,6 +316,8 @@
                 } else {
                     window.attachEvent("onmessage", (event) => this.onMessage(event));
                 }
+
+                this.updateDebugPanel();
 
                 // Add ResizeObserver to handle window resizing
                 this.resizeObserver = new ResizeObserver(() => {
@@ -421,6 +422,7 @@
                 }));
 
                 this.drawRectangles();
+                this.updateDebugPanel();
             }
 
             // Loads an image from the configured base path
@@ -440,14 +442,47 @@
                 }
             }
 
+            // Updates the debug panel with current state information
+            updateDebugPanel() {
+                if (this.debugPanel) {
+                    const debugInfo = `
+                        <div>Zoom Level: ${this.zoomLevel}</div>
+                        <div>Image X: ${this.imageX}</div>
+                        <div>Image Y: ${this.imageY}</div>
+                        <div>Image Width: ${this.image.clientWidth}</div>
+                        <div>Image Height: ${this.image.clientHeight}</div>
+                        <div>Canvas Width: ${this.canvas.width}</div>
+                        <div>Canvas Height: ${this.canvas.height}</div>
+                        ${this.rectangles.map((rect, index) => `
+                            <div>Rectangle ${index + 1} - X: ${rect.x}, Y: ${rect.y}, Width: ${rect.width}, Height: ${rect.height}, Hovered: ${rect.hovered}, Class: ${rect.class}, Probability: ${(rect.probability * 100).toFixed(1)}%</div>
+                        `).join('')}
+                    `;
+                    this.debugPanel.innerHTML = debugInfo;
+                }
+            }
+
+            // Handles mouse wheel events for zooming
+            handleWheel(event) {
+                if (this.disableInteraction) return;
+                event.preventDefault();
+                if (event.deltaY < 0) {
+                    this.zoomIn();
+                } else {
+                    this.zoomOut();
+                }
+                this.updateDebugPanel();
+            }
+
             // Updates canvas dimensions and scaling based on image size and device pixel ratio
             updateCanvasSize() {
                 const rect = this.image.getBoundingClientRect();
                 const dpr = window.devicePixelRatio || 1;
                 
+                // Set canvas size accounting for device pixel ratio
                 this.canvas.width = rect.width * dpr;
                 this.canvas.height = rect.height * dpr;
                 
+                // Set display size
                 this.canvas.style.width = `${rect.width}px`;
                 this.canvas.style.height = `${rect.height}px`;
                 
@@ -456,6 +491,7 @@
                 
                 this.drawRectangles();
                 this.updateImageTransform(true);
+                this.updateDebugPanel();
             }
 
             // Returns a color for a class name, using predefined colors or fallback colors
@@ -558,6 +594,7 @@
                 const mouseX = event.clientX - rect.left;
                 const mouseY = event.clientY - rect.top;
                 
+                // Convert to relative coordinates
                 const relativeX = mouseX / rect.width;
                 const relativeY = mouseY / rect.height;
 
@@ -575,6 +612,18 @@
                 });
 
                 this.drawRectangles();
+                this.updateDebugPanel();
+                
+                // Adding hover-specific details to the debug panel
+                if (this.debugPanel) {
+                    const hoverInfo = `
+                        <div>Relative Hover X: ${relativeX.toFixed(3)}</div>
+                        <div>Relative Hover Y: ${relativeY.toFixed(3)}</div>
+                        <div>Pixel Hover X: ${mouseX.toFixed(2)}</div>
+                        <div>Pixel Hover Y: ${mouseY.toFixed(2)}</div>
+                    `;
+                    this.debugPanel.innerHTML += hoverInfo;
+                }
             }
 
             // Increases zoom level by a fixed increment
@@ -583,6 +632,7 @@
                 this.zoomLevel = Math.min(3, this.zoomLevel + 0.15);
                 this.updateZoomSlider();
                 this.updateImageTransform(true);
+                this.updateDebugPanel();
             }
 
             // Decreases zoom level by a fixed increment
@@ -591,6 +641,7 @@
                 this.zoomLevel = Math.max(0.2, this.zoomLevel - 0.15);
                 this.updateZoomSlider();
                 this.updateImageTransform(true);
+                this.updateDebugPanel();
             }
 
             // Updates zoom level based on slider value
@@ -598,6 +649,7 @@
                 if (this.disableInteraction) return;
                 this.zoomLevel = this.zoomSlider.value / 100;
                 this.updateImageTransform(false);
+                this.updateDebugPanel();
             }
 
             // Fits the image to the container while maintaining aspect ratio
@@ -614,6 +666,7 @@
                 this.zoomLevel = Math.max(widthScale, heightScale);
                 this.updateZoomSlider();
                 this.updateImageTransform(true);
+                this.updateDebugPanel();
             }
 
             // Resets zoom and position to default values
@@ -624,6 +677,7 @@
                 this.imageY = 0;
                 this.updateZoomSlider();
                 this.updateImageTransform(true);
+                this.updateDebugPanel();
             }
 
             // Initiates image dragging operation
@@ -635,14 +689,17 @@
                 this.image.classList.remove('smooth');
                 this.canvas.classList.remove('smooth');
                 event.preventDefault();
+                this.updateDebugPanel();
             }
 
             // Updates image position during drag operation
             drag(event) {
                 if (!this.isDragging) return;
+
                 this.imageX = event.clientX - this.startX;
                 this.imageY = event.clientY - this.startY;
                 this.updateImageTransform(false);
+                this.updateDebugPanel();
             }
 
             // Completes drag operation and restores smooth transitions
@@ -650,6 +707,7 @@
                 this.isDragging = false;
                 this.image.classList.add('smooth');
                 this.canvas.classList.add('smooth');
+                this.updateDebugPanel();
             }
 
             // Synchronizes zoom slider UI with current zoom level
@@ -671,6 +729,7 @@
                 this.canvas.style.transform = transformValue;
                 
                 this.drawRectangles();
+                this.updateDebugPanel();
             }
 
             // Enables or disables user interaction with the viewer
@@ -693,14 +752,14 @@
             updateMappingExplanations() {
                 const mappingDetails = this.shadowRoot.querySelector('.mapping-details');
                 const explanations = {
-                    image: 'Name of the image file.',
-                    x: 'Top-left X-coordinate of the bounding box (normalized 0-1)',
-                    y: 'Top-left Y-coordinate of the bounding box (normalized 0-1)',
+                    image: 'Name of the image file in the dataset',
+                    x: 'Center X-coordinate of the bounding box (normalized 0-1)',
+                    y: 'Center Y-coordinate of the bounding box (normalized 0-1)',
                     width: 'Width of the bounding box relative to image width (normalized 0-1)',
                     height: 'Height of the bounding box relative to image height (normalized 0-1)',
                     class: 'Classification label of the detected object',
                     probability: 'Confidence score of the detection (0-1)',
-                    id: 'Unique identifier for each detection'
+                    id: 'Unique numerical identifier for each detection'
                 };
 
                 mappingDetails.innerHTML = Object.entries(this.columnMapping)
