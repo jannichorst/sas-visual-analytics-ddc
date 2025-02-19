@@ -749,10 +749,13 @@
 
                 this.rectangles.forEach(rect => {
                     // Calculate actual pixel coordinates based on current image size
-                    const scaledX = rect.x * (this.canvas.width / dpr);
-                    const scaledY = rect.y * (this.canvas.height / dpr);
-                    const scaledWidth = rect.width * (this.canvas.width / dpr);
-                    const scaledHeight = rect.height * (this.canvas.height / dpr);
+                    const imageWidth = this.canvas.width / dpr;
+                    const imageHeight = this.canvas.height / dpr;
+                    
+                    const scaledX = rect.x * imageWidth;
+                    const scaledY = rect.y * imageHeight;
+                    const scaledWidth = rect.width * imageWidth;
+                    const scaledHeight = rect.height * imageHeight;
 
                     const borderWidth = 2;
                     const color = this.getColorForClass(rect.class);
@@ -814,16 +817,20 @@
                 const mouseX = event.clientX - rect.left;
                 const mouseY = event.clientY - rect.top;
                 
-                // Convert to relative coordinates
+                // Convert mouse coordinates to normalized coordinates (0-1)
                 const relativeX = mouseX / rect.width;
                 const relativeY = mouseY / rect.height;
 
                 let hoveredAny = false;
                 this.rectangles.forEach(rect => {
-                    if (relativeX >= rect.x && 
-                        relativeX <= rect.x + rect.width && 
-                        relativeY >= rect.y && 
-                        relativeY <= rect.y + rect.height) {
+                    // Compare with normalized coordinates
+                    const centerX = rect.x;
+                    const centerY = rect.y;
+                    
+                    if (relativeX >= centerX && 
+                        relativeX <= centerX + rect.width && 
+                        relativeY >= centerY && 
+                        relativeY <= centerY + rect.height) {
                         rect.hovered = true;
                         hoveredAny = true;
                     } else {
