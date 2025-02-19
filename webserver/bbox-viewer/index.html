@@ -454,7 +454,7 @@
                             <canvas id="overlay"></canvas>
                             <div id="error-message">
                                 <div id="mapping-info" class="mapping-info">
-                                    <h2>Select an image</h2>
+                                    <h2>elect a single image to view</h2>
                                     <h4>Expected Variables</h4>
                                     <div class="mapping-details"></div>
                                     <div class="base-path-info">Current base path: ${this.basePath}</div>
@@ -600,7 +600,7 @@
                     // Reset the error message HTML completely
                     this.errorMessage.innerHTML = `
                         <div id="mapping-info" class="mapping-info">
-                            <h2>Select an image</h2>
+                            <h2>Select a single image to view</h2>
                             <h4>Expected Variables</h4>
                             <div class="mapping-details"></div>
                             <div class="base-path-info">Current base path: ${this.basePath}</div>
@@ -712,7 +712,7 @@
                 // Add error handler for this specific load attempt
                 this.image.onerror = (e) => {
                     // Show error message with failed image info
-                    this.showError("Failed loading image", e.target.src, 'error');
+                    this.showError("Failed to load image", e.target.src, 'error');
                     
                     // Clear canvas and hide toolbar
                     this.canvas.getContext('2d').clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -1095,7 +1095,7 @@
             updateMappingExplanations() {
                 const mappingDetails = this.shadowRoot.querySelector('.mapping-details');
                 const explanations = {
-                    image: 'Name of the image file in the dataset',
+                    image: 'Name of the image file or local path. (mind the base path)',
                     x: 'X-coordinate of the top left corner bounding box corner (normalized 0-1)',
                     y: 'Y-coordinate of the top left corner bounding box corner (normalized 0-1)',
                     width: 'Width of the bounding box relative to image width (normalized 0-1)',
