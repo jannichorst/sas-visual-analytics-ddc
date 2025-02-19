@@ -303,7 +303,7 @@
                                     <h2>elect a single image to view</h2>
                                     <h4>Expected Variables</h4>
                                     <div class="mapping-details"></div>
-                                    <div class="base-path-info">Current basepath parameter: ${this.basePath}</div>
+                                    <div class="base-path-info"></div>
                                 </div>
                             </div>
                         </div>
@@ -421,6 +421,9 @@
 
                 // Initialize mapping explanations
                 this.updateMappingExplanations();
+
+                // Update the base path info display
+                this.updateBasepathDisplay();
             }
 
             // Displays an error message and hides the image
@@ -586,9 +589,18 @@
             // Updates the base path for image loading
             setBasePath(path) {
                 this.basePath = path.endsWith('/') ? path : path + '/';
+                this.updateBasepathDisplay();
                 if (this.image.src) {
                     const currentImage = this.image.src.split('/').pop();
                     this.loadImage(currentImage);
+                }
+            }
+
+            // New method to update basepath display
+            updateBasepathDisplay() {
+                const basePathInfo = this.shadowRoot.querySelector('.base-path-info');
+                if (basePathInfo) {
+                    basePathInfo.textContent = `Current base path: ${this.basePath}`;
                 }
             }
 
