@@ -43,56 +43,67 @@
         }
         
         #error-message.error {
-            background: rgba(255, 235, 235, 0.9);
+            background: rgba(255, 235, 235, 0.95);
         }
         
         #error-message.neutral {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
         }
         
-        #error-message h3 {
+        #error-message h2 {
             margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 20px;
         }
         
-        #error-message.neutral h3 {
-            display: none;
+        #error-message.error h2 {
+            color: #d32f2f;
+        }
+        
+        #error-message.neutral h2 {
+            color: #333;
+        }
+        
+        #error-text {
+            color: #666;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        
+        #error-details {
+            background: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            text-align: left;
+            font-size: 12px;
+            color: #666;
+            max-height: 200px;
+            overflow-y: auto;
         }
         
         .mapping-info {
             margin-top: 15px;
-            color: #333;
+            color: #666;
             text-align: left;
-            padding: 20px;
+            padding: 10px;
+            font-size: 13px;
         }
         
         .mapping-toggle {
-            color: #666;
-            text-decoration: none;
-            cursor: pointer;
-            font-size: 0.9em;
-            margin-top: 10px;
-            display: inline-block;
-            padding: 8px 16px;
-            background: #fff;
-            border-radius: 4px;
-            transition: background 0.2s;
-        }
-        
-        .mapping-toggle:hover {
-            background: #ebebeb;
+            display: none;
         }
         
         .mapping-details {
-            display: none;
-            margin-top: 15px;
+            display: table;
+            margin-top: 10px;
             border-spacing: 0;
             width: 100%;
             background: #fff;
             border-radius: 4px;
-        }
-        
-        .mapping-details.show {
-            display: table;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
         
         .mapping-row {
@@ -100,22 +111,24 @@
         }
         
         .mapping-row:nth-child(even) {
-            background: #f4f4f4;
+            background: #f8f8f8;
         }
         
         .mapping-label {
             display: table-cell;
-            padding: 8px 16px;
+            padding: 8px 12px;
             font-weight: 600;
-            color: #333;
+            color: #444;
             width: 80px;
             white-space: nowrap;
+            font-size: 12px;
         }
         
         .mapping-description {
             display: table-cell;
-            padding: 8px 16px;
-            color: #333;
+            padding: 8px 12px;
+            color: #666;
+            font-size: 12px;
         }
     </style>
 </head>
@@ -244,11 +257,11 @@
                             <img id="image" src="" alt="Placeholder Image" style="display: none;">
                             <canvas id="overlay"></canvas>
                             <div id="error-message">
-                                <h3>Error</h3>
+                                <h2>File could not be loaded</h2>
                                 <p id="error-text"></p>
                                 <p id="error-details"></p>
                                 <div id="mapping-info" class="mapping-info">
-                                    <div class="mapping-toggle">Show expected data format ▼</div>
+                                    <h2>Select an image</h2>
                                     <div class="mapping-details"></div>
                                 </div>
                             </div>
@@ -373,23 +386,26 @@
             showError(message, details = '', type = 'error') {
                 this.errorMessage.style.display = 'block';
                 this.image.style.display = 'none';
-                this.errorText.textContent = message;
-                this.errorDetails.textContent = details ? `Details: ${details}` : '';
                 
                 // Reset classes and apply the appropriate one
                 this.errorMessage.classList.remove('error', 'neutral');
                 this.errorMessage.classList.add(type);
                 
-                // Show/hide elements based on message type
-                const errorTitle = this.shadowRoot.querySelector('#error-message h3');
+                const errorTitle = this.shadowRoot.querySelector('#error-message > h2');
                 const mappingInfo = this.shadowRoot.querySelector('#mapping-info');
                 
                 if (type === 'neutral' && message === "Select an image to view") {
                     errorTitle.style.display = 'none';
                     mappingInfo.style.display = 'block';
+                    this.errorText.style.display = 'none';
+                    this.errorDetails.style.display = 'none';
                 } else {
                     errorTitle.style.display = 'block';
                     mappingInfo.style.display = 'none';
+                    this.errorText.textContent = `Path: ${this.basePath}${message}`;
+                    this.errorText.style.display = 'block';
+                    this.errorDetails.style.display = 'block';
+                    this.errorDetails.textContent = details ? JSON.stringify(details, null, 2) : '';
                 }
                 
                 this.rectangles = [];
