@@ -187,6 +187,11 @@
                 this.startX = 0;
                 this.startY = 0;
 
+                // Apply initial toolbar visibility based on disableInteraction
+                if (this.disableInteraction) {
+                    this.shadowRoot.querySelector('#toolbar').classList.add('hidden');
+                }
+
                 // Color mapping system
                 this.colorCache = new Map();
                 // Predefined colors for common classes (like in skeleton example)
