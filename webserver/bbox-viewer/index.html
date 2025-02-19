@@ -598,7 +598,18 @@
                     `;
                 } else {
                     // For neutral messages (like no selection), show mapping info
-                    mappingInfo.style.display = 'block';
+                    // Reset the error message HTML completely
+                    this.errorMessage.innerHTML = `
+                        <div id="mapping-info" class="mapping-info">
+                            <h2>Select an image</h2>
+                            <h4>Expected Variables</h4>
+                            <div class="mapping-details"></div>
+                            <div class="base-path-info">Current base path: ${this.basePath}</div>
+                        </div>
+                    `;
+                    // Get the new mapping info element and show it
+                    const newMappingInfo = this.shadowRoot.querySelector('#mapping-info');
+                    newMappingInfo.style.display = 'block';
                     this.updateMappingExplanations();
                 }
                 
