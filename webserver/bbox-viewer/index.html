@@ -633,19 +633,29 @@
             loadImage(imageName) {
                 const fullPath = this.basePath + imageName;
                 if (this.image.src !== fullPath) {
+                    // Store current zoom level
+                    const currentZoom = this.zoomLevel;
+                    
                     // Clear current image and canvas while loading
                     this.canvas.getContext('2d').clearRect(0, 0, this.canvas.width, this.canvas.height);
                     
-                    // Reset zoom and position before loading new image
-                    this.zoomLevel = 1;
+                    // Reset position
                     this.imageX = 0;
                     this.imageY = 0;
                     
                     // Add load event listener before setting src
                     this.image.onload = () => {
+                        // First set zoom to 1 for proper canvas sizing
+                        this.zoomLevel = 1;
                         this.updateCanvasSize();
+                        
+                        // Then restore the zoom level if needed
+                        if (currentZoom !== 1) {
+                            this.zoomLevel = currentZoom;
+                            this.updateImageTransform(true);
+                        }
+                        
                         this.drawRectangles();
-                        this.updateImageTransform(true);
                         this.updateZoomSlider();
                     };
                     
@@ -695,29 +705,24 @@
 
             // Updates canvas dimensions and scaling based on image size and device pixel ratio
             updateCanvasSize() {
-                // Get the base dimensions of the image (unzoomed)
                 const rect = this.image.getBoundingClientRect();
                 const dpr = window.devicePixelRatio || 1;
                 
-                // Calculate base dimensions (without zoom)
-                const baseWidth = rect.width / this.zoomLevel;
-                const baseHeight = rect.height / this.zoomLevel;
+                // Always use unzoomed dimensions for canvas
+                const unzoomedWidth = rect.width;
+                const unzoomedHeight = rect.height;
                 
-                // Set canvas size using base dimensions
-                this.canvas.width = baseWidth * dpr;
-                this.canvas.height = baseHeight * dpr;
+                // Set physical canvas size (accounting for DPR)
+                this.canvas.width = unzoomedWidth * dpr;
+                this.canvas.height = unzoomedHeight * dpr;
                 
                 // Set display size
-                this.canvas.style.width = `${baseWidth}px`;
-                this.canvas.style.height = `${baseHeight}px`;
+                this.canvas.style.width = `${unzoomedWidth}px`;
+                this.canvas.style.height = `${unzoomedHeight}px`;
                 
                 const ctx = this.canvas.getContext('2d');
                 ctx.scale(dpr, dpr);
                 ctx.imageSmoothingEnabled = false;
-                
-                this.drawRectangles();
-                this.updateImageTransform(true);
-                this.updateDebugPanel();
             }
 
             // Returns a color for a class name, using predefined colors or fallback colors
@@ -753,7 +758,7 @@
                 // Reset transform and scale for DPR
                 ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
                 
-                // Get the actual displayed dimensions of the canvas
+                // Use canvas dimensions for drawing (already accounts for DPR)
                 const displayedWidth = this.canvas.width / dpr;
                 const displayedHeight = this.canvas.height / dpr;
 
@@ -958,9 +963,11 @@
                     this.image.classList.remove('smooth');
                     this.canvas.classList.remove('smooth');
                 }
+                
                 this.image.style.transform = transformValue;
                 this.canvas.style.transform = transformValue;
                 
+                // Redraw rectangles after transform update
                 this.drawRectangles();
                 this.updateDebugPanel();
             }
