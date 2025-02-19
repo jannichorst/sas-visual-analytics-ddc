@@ -4,97 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BBox Viewer</title>
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
-        
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #f0f0f0;
-        }
-        
-        bbox-viewer-app {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-        
-        #error-message {
-            display: none;
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            z-index: 3;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        #error-message.error {
-            background: rgba(255, 235, 235, 0.9);
-        }
-        
-        #error-message.neutral {
-            background: rgba(255, 255, 255, 0.9);
-        }
-        
-        #error-message h3 {
-            margin-top: 0;
-        }
-        
-        #error-message.neutral h3 {
-            display: none;
-        }
-        
-        .mapping-info {
-            margin-top: 15px;
-            font-size: 0.9em;
-            color: #666;
-            text-align: left;
-        }
-        
-        .mapping-toggle {
-            color: #666;
-            text-decoration: underline;
-            cursor: pointer;
-            font-size: 0.8em;
-            margin-top: 10px;
-            display: block;
-        }
-        
-        .mapping-details {
-            display: none;
-            margin-top: 10px;
-        }
-        
-        .mapping-details.show {
-            display: block;
-        }
-        
-        .mapping-row {
-            margin: 5px 0;
-            font-size: 0.8em;
-        }
-        
-        .mapping-label {
-            font-weight: bold;
-            color: #444;
-        }
-    </style>
 </head>
 <body>
     <bbox-viewer-app></bbox-viewer-app>
-    <!-- <div id="debug-panel"></div> -->
+    <div id="debug-panel"></div>
 
     <script>
         class BboxViewerApp extends HTMLElement {
@@ -118,12 +31,31 @@
                 
                 this.shadowRoot.innerHTML = `
                     <style>
+                        /* Root styles */
                         :host {
                             display: block;
                             width: 100%;
                             height: 100%;
                             overflow: hidden;
                         }
+
+                        /* Global page styles */
+                        html, body {
+                            margin: 0;
+                            padding: 0;
+                            width: 100%;
+                            height: 100%;
+                            overflow: hidden;
+                        }
+
+                        body {
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            background-color: #f0f0f0;
+                        }
+
+                        /* Container styles */
                         #app-container {
                             width: 100%;
                             height: 100%;
@@ -132,6 +64,7 @@
                             overflow: hidden;
                             background-color: #f8f8f8;
                         }
+
                         #image-container {
                             flex: 1;
                             position: relative;
@@ -139,6 +72,8 @@
                             width: 100%;
                             height: 100%;
                         }
+
+                        /* Image and overlay styles */
                         #image, #overlay {
                             position: absolute;
                             left: 50%;
@@ -147,6 +82,7 @@
                             max-width: 100%;
                             max-height: 100%;
                         }
+
                         #overlay {
                             pointer-events: auto;
                             width: 100%;
@@ -159,28 +95,8 @@
                             image-rendering: crisp-edges;
                             -ms-interpolation-mode: nearest-neighbor;
                         }
-                        .smooth {
-                            transition: transform 0.3s ease;
-                        }
-                        .view-control {
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            width: 50px;
-                            height: 50px;
-                            cursor: pointer;
-                        }
-                        .view-control:hover {
-                            opacity: 0.5;
-                        }
-                        .view-control:active {
-                            transform: scale(0.9);
-                        }
-                        .view-control img {
-                            width: 30px;
-                            height: 30px;
-                            margin: 0 5px;
-                        }
+
+                        /* Toolbar styles */
                         #toolbar {
                             height: 50px;
                             background-color: white;
@@ -190,16 +106,116 @@
                             align-items: center;
                             z-index: 1;
                         }
+
                         #toolbar.hidden {
                             display: none;
                         }
+
+                        .view-control {
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            width: 50px;
+                            height: 50px;
+                            cursor: pointer;
+                        }
+
+                        .view-control:hover {
+                            opacity: 0.5;
+                        }
+
+                        .view-control:active {
+                            transform: scale(0.9);
+                        }
+
+                        .view-control img {
+                            width: 30px;
+                            height: 30px;
+                            margin: 0 5px;
+                        }
+
                         #zoom-slider {
                             width: 100px;
                             opacity: 0.7;
                         }
+
                         #zoom-slider:hover {
                             opacity: 1;
                         }
+
+                        /* Error message styles */
+                        #error-message {
+                            display: none;
+                            position: absolute;
+                            left: 50%;
+                            top: 50%;
+                            transform: translate(-50%, -50%);
+                            text-align: center;
+                            z-index: 3;
+                            background: rgba(255, 255, 255, 0.9);
+                            padding: 20px;
+                            border-radius: 5px;
+                            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                        }
+
+                        #error-message.error {
+                            background: rgba(255, 235, 235, 0.9);
+                        }
+
+                        #error-message.neutral {
+                            background: rgba(255, 255, 255, 0.9);
+                        }
+
+                        #error-message h3 {
+                            margin-top: 0;
+                        }
+
+                        #error-message.neutral h3 {
+                            display: none;
+                        }
+
+                        /* Mapping info styles */
+                        .mapping-info {
+                            margin-top: 15px;
+                            font-size: 0.9em;
+                            color: #666;
+                            text-align: left;
+                        }
+
+                        .mapping-toggle {
+                            color: #666;
+                            text-decoration: underline;
+                            cursor: pointer;
+                            font-size: 0.8em;
+                            margin-top: 10px;
+                            display: block;
+                        }
+
+                        .mapping-details {
+                            display: none;
+                            margin-top: 10px;
+                        }
+
+                        .mapping-details.show {
+                            display: block;
+                        }
+
+                        .mapping-row {
+                            margin: 5px 0;
+                            font-size: 0.8em;
+                        }
+
+                        .mapping-label {
+                            font-weight: bold;
+                            color: #444;
+                        }
+
+                        /* Animation styles */
+                        .smooth {
+                            transition: transform 0.3s ease;
+                        }
+
+                        /* Debug panel styles */
                         #debug-panel {
                             background: rgba(255, 255, 255, 0.8);
                             padding: 10px;
@@ -752,14 +768,14 @@
             updateMappingExplanations() {
                 const mappingDetails = this.shadowRoot.querySelector('.mapping-details');
                 const explanations = {
-                    image: 'Name of the image file in the dataset',
-                    x: 'Center X-coordinate of the bounding box (normalized 0-1)',
-                    y: 'Center Y-coordinate of the bounding box (normalized 0-1)',
+                    image: 'Name of the image file.',
+                    x: 'Top-left X-coordinate of the bounding box (normalized 0-1)',
+                    y: 'Top-left Y-coordinate of the bounding box (normalized 0-1)',
                     width: 'Width of the bounding box relative to image width (normalized 0-1)',
                     height: 'Height of the bounding box relative to image height (normalized 0-1)',
                     class: 'Classification label of the detected object',
                     probability: 'Confidence score of the detection (0-1)',
-                    id: 'Unique numerical identifier for each detection'
+                    id: 'Unique identifier for each detection'
                 };
 
                 mappingDetails.innerHTML = Object.entries(this.columnMapping)
