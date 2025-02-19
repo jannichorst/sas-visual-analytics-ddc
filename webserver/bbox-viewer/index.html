@@ -47,7 +47,7 @@
         }
         
         #error-message.neutral {
-            background: rgba(255, 255, 255, 0.95);
+            background: none;
         }
         
         #error-message h2 {
@@ -62,6 +62,8 @@
         
         #error-message.neutral h2 {
             color: #333;
+            display: block !important;
+            margin-bottom: 20px;
         }
         
         #error-text {
@@ -90,6 +92,8 @@
             text-align: left;
             padding: 10px;
             font-size: 13px;
+            background: none;
+            box-shadow: none;
         }
         
         .mapping-toggle {
@@ -97,7 +101,7 @@
         }
         
         .mapping-details {
-            display: table;
+            display: table !important;
             margin-top: 10px;
             border-spacing: 0;
             width: 100%;
@@ -262,7 +266,7 @@
                         }
                         
                         #error-message.neutral {
-                            background: rgba(255, 255, 255, 0.95);
+                            background: none;
                         }
                         
                         #error-message h2 {
@@ -277,6 +281,8 @@
                         
                         #error-message.neutral h2 {
                             color: #333;
+                            display: block !important;
+                            margin-bottom: 20px;
                         }
                         
                         #error-text {
@@ -305,10 +311,12 @@
                             text-align: left;
                             padding: 10px;
                             font-size: 13px;
+                            background: none;
+                            box-shadow: none;
                         }
                         
                         .mapping-details {
-                            display: table;
+                            display: table !important;
                             margin-top: 10px;
                             border-spacing: 0;
                             width: 100%;
@@ -524,10 +532,12 @@
                 const mappingInfo = this.shadowRoot.querySelector('#mapping-info');
                 
                 if (type === 'neutral' && message === "Select an image to view") {
-                    errorTitle.style.display = 'none';
+                    errorTitle.style.display = 'block';
                     mappingInfo.style.display = 'block';
                     this.errorText.style.display = 'none';
                     this.errorDetails.style.display = 'none';
+                    // Make sure to call updateMappingExplanations
+                    this.updateMappingExplanations();
                 } else {
                     errorTitle.style.display = 'block';
                     mappingInfo.style.display = 'none';
