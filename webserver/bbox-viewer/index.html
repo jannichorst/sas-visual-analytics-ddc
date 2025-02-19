@@ -25,10 +25,6 @@
             height: 100%;
             display: block;
         }
-        
-        #toolbar.hidden {
-            display: none;
-        }
     </style>
 </head>
 <body>
@@ -41,7 +37,6 @@
                 super();
                 this.attachShadow({ mode: 'open' });
                 this.basePath = './images/'; // Base path for images - can be configured
-                this.viewerOnly = false; // Parameter to control toolbar visibility and zooming
                 this.shadowRoot.innerHTML = `
                     <style>
                         :host {
@@ -224,25 +219,17 @@
                     this.updateCanvasSize();
                 });
                 
-                // Update toolbar visibility based on viewerOnly setting
-                this.updateToolbarVisibility();
-                
-                // Only add zoom and drag event listeners if not in viewerOnly mode
-                if (!this.viewerOnly) {
-                    this.zoomInButton.addEventListener('click', () => this.zoomIn());
-                    this.zoomOutButton.addEventListener('click', () => this.zoomOut());
-                    this.zoomSlider.addEventListener('input', () => this.sliderZoom());
-                    this.maximizeButton.addEventListener('click', () => this.maximize());
-                    this.minimizeButton.addEventListener('click', () => this.minimize());
-                    this.imageContainer.addEventListener('wheel', (e) => this.handleWheel(e));
-                }
-
-                // Always add these event listeners for basic functionality
+                this.zoomInButton.addEventListener('click', () => this.zoomIn());
+                this.zoomOutButton.addEventListener('click', () => this.zoomOut());
+                this.zoomSlider.addEventListener('input', () => this.sliderZoom());
+                this.maximizeButton.addEventListener('click', () => this.maximize());
+                this.minimizeButton.addEventListener('click', () => this.minimize());
                 this.image.addEventListener('load', () => this.updateCanvasSize());
                 this.imageContainer.addEventListener('mousedown', (e) => this.startDrag(e));
                 this.imageContainer.addEventListener('mousemove', (e) => this.drag(e));
                 this.imageContainer.addEventListener('mouseup', () => this.endDrag());
                 this.imageContainer.addEventListener('mouseleave', () => this.endDrag());
+                this.imageContainer.addEventListener('wheel', (e) => this.handleWheel(e));
                 this.canvas.addEventListener('mousemove', (e) => this.handleCanvasHover(e));
 
                 // Add message event listener for VA data
@@ -355,7 +342,6 @@
             }
 
             handleWheel(event) {
-                if (this.viewerOnly) return;
                 event.preventDefault();
                 if (event.deltaY < 0) {
                     this.zoomIn();
@@ -515,31 +501,26 @@
             }
 
             zoomIn() {
-                if (this.viewerOnly) return;
-                if (this.toolbar.classList.contains('disabled')) return;
                 this.zoomLevel = Math.min(3, this.zoomLevel + 0.15);
                 this.updateZoomSlider();
                 this.updateImageTransform(true);
+                this.updateDebugPanel();
             }
 
             zoomOut() {
-                if (this.viewerOnly) return;
-                if (this.toolbar.classList.contains('disabled')) return;
                 this.zoomLevel = Math.max(0.2, this.zoomLevel - 0.15);
                 this.updateZoomSlider();
                 this.updateImageTransform(true);
+                this.updateDebugPanel();
             }
 
             sliderZoom() {
-                if (this.viewerOnly) return;
-                if (this.toolbar.classList.contains('disabled')) return;
                 this.zoomLevel = this.zoomSlider.value / 100;
                 this.updateImageTransform(false);
+                this.updateDebugPanel();
             }
 
             maximize() {
-                if (this.viewerOnly) return;
-                if (this.toolbar.classList.contains('disabled')) return;
                 const containerWidth = this.shadowRoot.querySelector('#image-container').clientWidth;
                 const containerHeight = this.shadowRoot.querySelector('#image-container').clientHeight;
                 const imageWidth = this.image.clientWidth;
@@ -551,6 +532,7 @@
                 this.zoomLevel = Math.max(widthScale, heightScale);
                 this.updateZoomSlider();
                 this.updateImageTransform(true);
+                this.updateDebugPanel();
             }
 
             minimize() {
@@ -563,7 +545,6 @@
             }
 
             startDrag(event) {
-                if (this.viewerOnly) return;
                 this.isDragging = true;
                 this.startX = event.clientX - this.imageX;
                 this.startY = event.clientY - this.imageY;
@@ -607,27 +588,6 @@
                 
                 this.drawRectangles();
                 this.updateDebugPanel();
-            }
-
-            // Add method to set viewerOnly mode
-            setViewerOnly(value) {
-                this.viewerOnly = value;
-                this.updateToolbarVisibility();
-                
-                // Reset zoom and position if switching to viewer only mode
-                if (this.viewerOnly) {
-                    this.minimize();
-                }
-            }
-
-            // Add method to update toolbar visibility
-            updateToolbarVisibility() {
-                const toolbar = this.shadowRoot.querySelector('#toolbar');
-                if (this.viewerOnly) {
-                    toolbar.classList.add('hidden');
-                } else {
-                    toolbar.classList.remove('hidden');
-                }
             }
         }
 
