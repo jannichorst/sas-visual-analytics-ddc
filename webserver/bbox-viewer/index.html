@@ -99,6 +99,20 @@
             box-shadow: none;
         }
         
+        .mapping-info h4 {
+            color: #888;
+            font-size: 14px;
+            margin: 0 0 15px 0;
+            font-weight: normal;
+        }
+        
+        .base-path-info {
+            color: #888;
+            font-size: 12px;
+            margin-top: 15px;
+            text-align: left;
+        }
+        
         .mapping-toggle {
             display: none;
         }
@@ -108,9 +122,9 @@
             margin-top: 0;
             border-spacing: 0;
             width: 100%;
-            background: #fff;
-            border-radius: 4px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            background: none;
+            border-radius: 0;
+            box-shadow: none;
         }
         
         .mapping-row {
@@ -118,7 +132,7 @@
         }
         
         .mapping-row:nth-child(even) {
-            background: #f8f8f8;
+            background: none;
         }
         
         .mapping-label {
@@ -134,7 +148,7 @@
         .mapping-description {
             display: table-cell;
             padding: 8px 12px;
-            color: #666;
+            color: #888;
             font-size: 12px;
         }
         
@@ -321,14 +335,28 @@
                             box-shadow: none;
                         }
                         
+                        .mapping-info h4 {
+                            color: #888;
+                            font-size: 14px;
+                            margin: 0 0 15px 0;
+                            font-weight: normal;
+                        }
+                        
+                        .base-path-info {
+                            color: #888;
+                            font-size: 12px;
+                            margin-top: 15px;
+                            text-align: left;
+                        }
+                        
                         .mapping-details {
                             display: table !important;
                             margin-top: 0;
                             border-spacing: 0;
                             width: 100%;
-                            background: #fff;
-                            border-radius: 4px;
-                            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                            background: none;
+                            border-radius: 0;
+                            box-shadow: none;
                         }
                         
                         .mapping-row {
@@ -336,7 +364,7 @@
                         }
                         
                         .mapping-row:nth-child(even) {
-                            background: #f8f8f8;
+                            background: none;
                         }
                         
                         .mapping-label {
@@ -352,7 +380,7 @@
                         .mapping-description {
                             display: table-cell;
                             padding: 8px 12px;
-                            color: #666;
+                            color: #888;
                             font-size: 12px;
                         }
                         
@@ -405,7 +433,9 @@
                                 <p id="error-details"></p>
                                 <div id="mapping-info" class="mapping-info">
                                     <h2>Select an image</h2>
+                                    <h4>Expected Variables</h4>
                                     <div class="mapping-details"></div>
+                                    <div class="base-path-info">Current base path: ${this.basePath}</div>
                                 </div>
                             </div>
                         </div>
@@ -538,7 +568,7 @@
                 const mappingInfo = this.shadowRoot.querySelector('#mapping-info');
                 
                 if (type === 'neutral' && message === "Select an image to view") {
-                    errorTitle.style.display = 'block';
+                    errorTitle.style.display = 'none'; // Hide the error title
                     mappingInfo.style.display = 'block';
                     this.errorText.style.display = 'none';
                     this.errorDetails.style.display = 'none';
