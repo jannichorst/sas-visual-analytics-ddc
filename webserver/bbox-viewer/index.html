@@ -636,11 +636,17 @@
                     // Clear current image and canvas while loading
                     this.canvas.getContext('2d').clearRect(0, 0, this.canvas.width, this.canvas.height);
                     
+                    // Reset zoom and position before loading new image
+                    this.zoomLevel = 1;
+                    this.imageX = 0;
+                    this.imageY = 0;
+                    
                     // Add load event listener before setting src
                     this.image.onload = () => {
                         this.updateCanvasSize();
                         this.drawRectangles();
                         this.updateImageTransform(true);
+                        this.updateZoomSlider();
                     };
                     
                     this.image.src = fullPath;
@@ -689,16 +695,21 @@
 
             // Updates canvas dimensions and scaling based on image size and device pixel ratio
             updateCanvasSize() {
+                // Get the base dimensions of the image (unzoomed)
                 const rect = this.image.getBoundingClientRect();
                 const dpr = window.devicePixelRatio || 1;
                 
-                // Set canvas size accounting for device pixel ratio
-                this.canvas.width = rect.width * dpr;
-                this.canvas.height = rect.height * dpr;
+                // Calculate base dimensions (without zoom)
+                const baseWidth = rect.width / this.zoomLevel;
+                const baseHeight = rect.height / this.zoomLevel;
+                
+                // Set canvas size using base dimensions
+                this.canvas.width = baseWidth * dpr;
+                this.canvas.height = baseHeight * dpr;
                 
                 // Set display size
-                this.canvas.style.width = `${rect.width}px`;
-                this.canvas.style.height = `${rect.height}px`;
+                this.canvas.style.width = `${baseWidth}px`;
+                this.canvas.style.height = `${baseHeight}px`;
                 
                 const ctx = this.canvas.getContext('2d');
                 ctx.scale(dpr, dpr);
