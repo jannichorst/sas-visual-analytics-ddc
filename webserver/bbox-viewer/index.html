@@ -609,6 +609,13 @@
                 this.errorMessage.style.display = 'none';
                 this.image.style.display = 'block';
 
+                // Reset zoom level and position when loading new image
+                this.zoomLevel = 1;
+                this.imageX = 0;
+                this.imageY = 0;
+                this.updateZoomSlider();
+                this.updateImageTransform(true);
+
                 // Load the image
                 this.loadImage(imageName);
 
@@ -730,6 +737,7 @@
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
                 // Scale for DPR
                 ctx.scale(dpr, dpr);
+                ctx.imageSmoothingEnabled = false;
 
 
                 this.rectangles.forEach(rect => {
@@ -776,7 +784,7 @@
                         // Draw label background
                         ctx.fillStyle = color;
                         ctx.beginPath();
-                        ctx.rect(labelX, labelY, labelWidth, labelHeight);
+                        ctx.rect(labelX, labelY + 1, labelWidth, labelHeight);
                         ctx.fill();
                         ctx.stroke();
 
@@ -787,7 +795,7 @@
                         ctx.fillText(
                             labelText,
                             Math.round(labelX + padding),
-                            Math.round(labelY + (labelHeight / 2))
+                            Math.round(labelY + (labelHeight / 2) + 1)
                         );
                     }
                 });
