@@ -609,11 +609,8 @@
                 this.errorMessage.style.display = 'none';
                 this.image.style.display = 'block';
 
-                // Reset zoom level and position when loading new image
-                this.zoomLevel = 1;
-                this.imageX = 0;
-                this.imageY = 0;
-                this.updateZoomSlider();
+                // Reset view using minimize function instead of manual reset
+                this.minimize();
 
                 // Convert VA data to rectangles format using column mapping
                 this.rectangles = vaData.data.map(row => ({
