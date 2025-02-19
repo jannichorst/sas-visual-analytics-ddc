@@ -37,6 +37,7 @@
                 super();
                 this.attachShadow({ mode: 'open' });
                 this.basePath = './images/'; // Base path for images - can be configured
+                this.disableInteraction = false; // New property to control interaction
                 this.shadowRoot.innerHTML = `
                     <style>
                         :host {
@@ -110,6 +111,9 @@
                             justify-content: center;
                             align-items: center;
                             z-index: 1;
+                        }
+                        #toolbar.hidden {
+                            display: none;
                         }
                         #zoom-slider {
                             width: 100px;
@@ -342,6 +346,7 @@
             }
 
             handleWheel(event) {
+                if (this.disableInteraction) return;
                 event.preventDefault();
                 if (event.deltaY < 0) {
                     this.zoomIn();
@@ -501,6 +506,7 @@
             }
 
             zoomIn() {
+                if (this.disableInteraction) return;
                 this.zoomLevel = Math.min(3, this.zoomLevel + 0.15);
                 this.updateZoomSlider();
                 this.updateImageTransform(true);
@@ -508,6 +514,7 @@
             }
 
             zoomOut() {
+                if (this.disableInteraction) return;
                 this.zoomLevel = Math.max(0.2, this.zoomLevel - 0.15);
                 this.updateZoomSlider();
                 this.updateImageTransform(true);
@@ -515,12 +522,14 @@
             }
 
             sliderZoom() {
+                if (this.disableInteraction) return;
                 this.zoomLevel = this.zoomSlider.value / 100;
                 this.updateImageTransform(false);
                 this.updateDebugPanel();
             }
 
             maximize() {
+                if (this.disableInteraction) return;
                 const containerWidth = this.shadowRoot.querySelector('#image-container').clientWidth;
                 const containerHeight = this.shadowRoot.querySelector('#image-container').clientHeight;
                 const imageWidth = this.image.clientWidth;
@@ -536,6 +545,7 @@
             }
 
             minimize() {
+                if (this.disableInteraction) return;
                 this.zoomLevel = 1;
                 this.imageX = 0;
                 this.imageY = 0;
@@ -545,6 +555,7 @@
             }
 
             startDrag(event) {
+                if (this.disableInteraction) return;
                 this.isDragging = true;
                 this.startX = event.clientX - this.imageX;
                 this.startY = event.clientY - this.imageY;
@@ -588,6 +599,21 @@
                 
                 this.drawRectangles();
                 this.updateDebugPanel();
+            }
+
+            setDisableInteraction(disabled) {
+                this.disableInteraction = disabled;
+                const toolbar = this.shadowRoot.querySelector('#toolbar');
+                if (disabled) {
+                    toolbar.classList.add('hidden');
+                    // Reset zoom and position when disabling interaction
+                    this.zoomLevel = 1;
+                    this.imageX = 0;
+                    this.imageY = 0;
+                    this.updateImageTransform(true);
+                } else {
+                    toolbar.classList.remove('hidden');
+                }
             }
         }
 
