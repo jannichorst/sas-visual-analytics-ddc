@@ -614,10 +614,6 @@
                 this.imageX = 0;
                 this.imageY = 0;
                 this.updateZoomSlider();
-                this.updateImageTransform(true);
-
-                // Load the image
-                this.loadImage(imageName);
 
                 // Convert VA data to rectangles format using column mapping
                 this.rectangles = vaData.data.map(row => ({
@@ -631,7 +627,8 @@
                     hovered: false
                 }));
 
-                this.drawRectangles();
+                // Load the image - this will trigger onload which updates canvas and draws rectangles
+                this.loadImage(imageName);
                 this.updateDebugPanel();
             }
 
@@ -639,6 +636,16 @@
             loadImage(imageName) {
                 const fullPath = this.basePath + imageName;
                 if (this.image.src !== fullPath) {
+                    // Clear current image and canvas while loading
+                    this.canvas.getContext('2d').clearRect(0, 0, this.canvas.width, this.canvas.height);
+                    
+                    // Add load event listener before setting src
+                    this.image.onload = () => {
+                        this.updateCanvasSize();
+                        this.drawRectangles();
+                        this.updateImageTransform(true);
+                    };
+                    
                     this.image.src = fullPath;
                 }
             }
