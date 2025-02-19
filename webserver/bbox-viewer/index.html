@@ -452,13 +452,14 @@
                             <h2>Select a single image to view</h2>
                             <h4>Expected Variables</h4>
                             <div class="mapping-details"></div>
-                            <div class="base-path-info">Current base path: ${this.basePath}</div>
+                            <div class="base-path-info"></div>
                         </div>
                     `;
                     // Get the new mapping info element and show it
                     const newMappingInfo = this.shadowRoot.querySelector('#mapping-info');
                     newMappingInfo.style.display = 'block';
                     this.updateMappingExplanations();
+                    this.updateBasepathDisplay();  // Update the basepath display after recreating the HTML
                 }
                 
                 this.rectangles = [];
