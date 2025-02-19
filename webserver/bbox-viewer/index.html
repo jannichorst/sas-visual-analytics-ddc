@@ -428,11 +428,6 @@
                             <img id="image" src="" alt="Placeholder Image" style="display: none;">
                             <canvas id="overlay"></canvas>
                             <div id="error-message">
-                                <div id="error-title">
-                                    <h2>File could not be loaded</h2>
-                                    <p id="error-text"></p>
-                                    <p id="error-details"></p>
-                                </div>
                                 <div id="mapping-info" class="mapping-info">
                                     <h2>Select an image</h2>
                                     <h4>Expected Variables</h4>
@@ -566,24 +561,9 @@
                 this.errorMessage.classList.remove('error', 'neutral');
                 this.errorMessage.classList.add(type);
                 
-                const errorTitle = this.shadowRoot.querySelector('#error-title');
                 const mappingInfo = this.shadowRoot.querySelector('#mapping-info');
-                
-                if (type === 'neutral' && message === "Select an image to view") {
-                    errorTitle.style.display = 'none'; // Hide the error title container
-                    this.errorText.style.display = 'none';
-                    this.errorDetails.style.display = 'none';
-                    mappingInfo.style.display = 'block';
-                    // Make sure to call updateMappingExplanations
-                    this.updateMappingExplanations();
-                } else {
-                    errorTitle.style.display = 'block';
-                    mappingInfo.style.display = 'none';
-                    this.errorText.textContent = `Path: ${this.basePath}${message}`;
-                    this.errorText.style.display = 'block';
-                    this.errorDetails.style.display = 'block';
-                    this.errorDetails.textContent = details ? JSON.stringify(details, null, 2) : '';
-                }
+                mappingInfo.style.display = 'block';
+                this.updateMappingExplanations();
                 
                 this.rectangles = [];
                 this.drawRectangles();
