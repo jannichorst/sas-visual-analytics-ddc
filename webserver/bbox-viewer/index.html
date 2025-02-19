@@ -582,8 +582,19 @@
                 this.errorMessage.classList.add(type);
                 
                 const mappingInfo = this.shadowRoot.querySelector('#mapping-info');
-                mappingInfo.style.display = 'block';
-                this.updateMappingExplanations();
+                
+                if (type === 'error') {
+                    // For error messages, show error state
+                    mappingInfo.style.display = 'none';
+                    this.errorMessage.innerHTML = `
+                        <h1>${message}</h1>
+                        <div class="error-path">${details}</div>
+                    `;
+                } else {
+                    // For neutral messages (like no selection), show mapping info
+                    mappingInfo.style.display = 'block';
+                    this.updateMappingExplanations();
+                }
                 
                 this.rectangles = [];
                 this.drawRectangles();
@@ -687,15 +698,8 @@
                     
                     // Add error handler for this specific load attempt
                     this.image.onerror = (e) => {
-                        // Clear all visual elements
-                        const mappingInfo = this.shadowRoot.querySelector('#mapping-info');
-                        mappingInfo.style.display = 'none';
-                        this.errorMessage.style.display = 'block';
-                        this.errorMessage.innerHTML = `
-                            <h1>Failed loading image</h1>
-                            <div class="error-path">${e.target.src}</div>
-                        `;
-                        this.image.style.display = 'none';
+                        // Show error message with failed image info
+                        this.showError("Failed loading image", e.target.src, 'error');
                         
                         // Clear canvas and hide toolbar
                         this.canvas.getContext('2d').clearRect(0, 0, this.canvas.width, this.canvas.height);
