@@ -36,6 +36,7 @@
             constructor() {
                 super();
                 this.attachShadow({ mode: 'open' });
+                this.basePath = './images/'; // Base path for images - can be configured
                 this.shadowRoot.innerHTML = `
                     <style>
                         :host {
@@ -128,11 +129,29 @@
                             top: 10px;
                             left: 10px;
                         }
+                        #error-message {
+                            display: none;
+                            position: absolute;
+                            left: 50%;
+                            top: 50%;
+                            transform: translate(-50%, -50%);
+                            text-align: center;
+                            z-index: 3;
+                            background: rgba(255, 255, 255, 0.9);
+                            padding: 20px;
+                            border-radius: 5px;
+                            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                        }
                     </style>
                     <div id="app-container">
                         <div id="image-container">
-                            <img id="image" src="images/img.jpg" alt="Placeholder Image">
+                            <img id="image" src="" alt="Placeholder Image" style="display: none;">
                             <canvas id="overlay"></canvas>
+                            <div id="error-message">
+                                <h3>Error</h3>
+                                <p id="error-text"></p>
+                                <p id="error-details"></p>
+                            </div>
                         </div>
                         <div id="toolbar">
                             <div class="view-control"><img id="zoom-out" src="icons/remove-outline.svg" alt="Zoom Out"></div>
@@ -154,6 +173,9 @@
                 this.maximizeButton = this.shadowRoot.querySelector('#maximize');
                 this.minimizeButton = this.shadowRoot.querySelector('#minimize');
                 this.debugPanel = document.querySelector('#debug-panel');
+                this.errorMessage = this.shadowRoot.querySelector('#error-message');
+                this.errorText = this.shadowRoot.querySelector('#error-text');
+                this.errorDetails = this.shadowRoot.querySelector('#error-details');
 
                 this.imageX = 0;
                 this.imageY = 0;
@@ -187,6 +209,9 @@
                 ];
                 this.nextFallbackColorIndex = 0;
 
+                // Initialize empty rectangles array
+                this.rectangles = [];
+
                 // Store the original image dimensions when image loads
                 this.image.addEventListener('load', () => {
                     this.originalImageWidth = this.image.naturalWidth;
@@ -194,37 +219,6 @@
                     this.updateCanvasSize();
                 });
                 
-                // Define rectangles in relative coordinates (0-1 range)
-                this.rectangles = [
-                    { 
-                        x: 0.1, 
-                        y: 0.1, 
-                        width: 0.2, 
-                        height: 0.2, 
-                        hovered: false,
-                        class: "person",
-                        probability: 0.95
-                    },
-                    { 
-                        x: 0.4, 
-                        y: 0.4, 
-                        width: 0.3, 
-                        height: 0.3, 
-                        hovered: false,
-                        class: "car",
-                        probability: 0.87
-                    },
-                    { 
-                        x: 0.8, 
-                        y: 0.8, 
-                        width: 0.1, 
-                        height: 0.1, 
-                        hovered: false,
-                        class: "alien",
-                        probability: 0.55
-                    }
-                ];
-
                 this.zoomInButton.addEventListener('click', () => this.zoomIn());
                 this.zoomOutButton.addEventListener('click', () => this.zoomOut());
                 this.zoomSlider.addEventListener('input', () => this.sliderZoom());
@@ -238,6 +232,13 @@
                 this.imageContainer.addEventListener('wheel', (e) => this.handleWheel(e));
                 this.canvas.addEventListener('mousemove', (e) => this.handleCanvasHover(e));
 
+                // Add message event listener for VA data
+                if (window.addEventListener) {
+                    window.addEventListener("message", (event) => this.onMessage(event), false);
+                } else {
+                    window.attachEvent("onmessage", (event) => this.onMessage(event));
+                }
+
                 this.updateDebugPanel();
 
                 // Add ResizeObserver to handle window resizing
@@ -245,6 +246,81 @@
                     this.updateCanvasSize();
                 });
                 this.resizeObserver.observe(this.imageContainer);
+            }
+
+            showError(message, details = '') {
+                this.errorMessage.style.display = 'block';
+                this.image.style.display = 'none';
+                this.errorText.textContent = message;
+                this.errorDetails.textContent = details ? `Details: ${details}` : '';
+                this.rectangles = [];
+                this.drawRectangles();
+            }
+
+            onMessage(event) {
+                if (!event || !event.data) return;
+                
+                const vaData = event.data;
+                
+                if (!vaData.data || !Array.isArray(vaData.data) || vaData.data.length === 0) {
+                    this.showError("Invalid data format received");
+                    return;
+                }
+
+                // Check for unique image name across all rows
+                const uniqueImages = new Set(vaData.data.map(row => row[0]));
+                if (uniqueImages.size === 0) {
+                    this.showError("No image name provided");
+                    return;
+                }
+                if (uniqueImages.size > 1) {
+                    this.showError("Multiple different images detected", "Please ensure all bounding boxes refer to the same image");
+                    return;
+                }
+
+                // Extract the image name from the first row
+                const imageName = vaData.data[0][0];
+                if (typeof imageName !== 'string') {
+                    this.showError("Invalid image name format", "Image name must be a string");
+                    return;
+                }
+
+                // Hide error message if it was showing
+                this.errorMessage.style.display = 'none';
+                this.image.style.display = 'block';
+
+                // Load the image
+                this.loadImage(imageName);
+
+                // Convert VA data to rectangles format
+                this.rectangles = vaData.data.map(row => ({
+                    x: row[1],          // x coordinate
+                    y: row[2],          // y coordinate
+                    width: row[3],      // width
+                    height: row[4],     // height
+                    class: row[5],      // class name
+                    probability: row[6], // probability
+                    id: row[7],         // id
+                    hovered: false      // initialize as not hovered
+                }));
+
+                this.drawRectangles();
+                this.updateDebugPanel();
+            }
+
+            loadImage(imageName) {
+                const fullPath = this.basePath + imageName;
+                if (this.image.src !== fullPath) {
+                    this.image.src = fullPath;
+                }
+            }
+
+            setBasePath(path) {
+                this.basePath = path.endsWith('/') ? path : path + '/';
+                if (this.image.src) {
+                    const currentImage = this.image.src.split('/').pop();
+                    this.loadImage(currentImage);
+                }
             }
 
             updateDebugPanel() {
