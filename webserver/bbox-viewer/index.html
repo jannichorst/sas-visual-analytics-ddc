@@ -428,9 +428,11 @@
                             <img id="image" src="" alt="Placeholder Image" style="display: none;">
                             <canvas id="overlay"></canvas>
                             <div id="error-message">
-                                <h2>File could not be loaded</h2>
-                                <p id="error-text"></p>
-                                <p id="error-details"></p>
+                                <div id="error-title">
+                                    <h2>File could not be loaded</h2>
+                                    <p id="error-text"></p>
+                                    <p id="error-details"></p>
+                                </div>
                                 <div id="mapping-info" class="mapping-info">
                                     <h2>Select an image</h2>
                                     <h4>Expected Variables</h4>
@@ -564,11 +566,11 @@
                 this.errorMessage.classList.remove('error', 'neutral');
                 this.errorMessage.classList.add(type);
                 
-                const errorTitle = this.shadowRoot.querySelector('#error-message > h2');
+                const errorTitle = this.shadowRoot.querySelector('#error-title');
                 const mappingInfo = this.shadowRoot.querySelector('#mapping-info');
                 
                 if (type === 'neutral' && message === "Select an image to view") {
-                    errorTitle.style.display = 'none'; // Hide the error title
+                    errorTitle.style.display = 'none'; // Hide the error title container
                     this.errorText.style.display = 'none';
                     this.errorDetails.style.display = 'none';
                     mappingInfo.style.display = 'block';
