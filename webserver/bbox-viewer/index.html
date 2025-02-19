@@ -727,30 +727,34 @@
 
             // Updates canvas dimensions and scaling based on image size and device pixel ratio
             updateCanvasSize() {
-                // Get the base dimensions of the image (unzoomed)
-                const rect = this.image.getBoundingClientRect();
                 const dpr = window.devicePixelRatio || 1;
                 
+                // Get container dimensions
+                const container = this.shadowRoot.querySelector('#image-container');
+                const containerRect = container.getBoundingClientRect();
+                
+                // Calculate the scaling factor to fit the image in the container
+                const scaleWidth = containerRect.width / this.image.naturalWidth;
+                const scaleHeight = containerRect.height / this.image.naturalHeight;
+                const scale = Math.min(scaleWidth, scaleHeight);
+                
+                // Calculate base dimensions maintaining aspect ratio
+                const baseWidth = this.image.naturalWidth * scale;
+                const baseHeight = this.image.naturalHeight * scale;
+                
                 console.log('updateCanvasSize - Input values:', {
-                    rect: {
-                        width: rect.width,
-                        height: rect.height
+                    containerDimensions: {
+                        width: containerRect.width,
+                        height: containerRect.height
                     },
-                    dpr,
-                    zoomLevel: this.zoomLevel,
-                    imageNaturalDimensions: {
+                    naturalDimensions: {
                         width: this.image.naturalWidth,
                         height: this.image.naturalHeight
                     },
-                    imageClientDimensions: {
-                        width: this.image.clientWidth,
-                        height: this.image.clientHeight
-                    }
+                    scale,
+                    dpr,
+                    zoomLevel: this.zoomLevel
                 });
-                
-                // Calculate base dimensions (without zoom)
-                const baseWidth = rect.width / this.zoomLevel;
-                const baseHeight = rect.height / this.zoomLevel;
                 
                 // Set canvas size using base dimensions
                 this.canvas.width = baseWidth * dpr;
@@ -759,6 +763,10 @@
                 // Set display size
                 this.canvas.style.width = `${baseWidth}px`;
                 this.canvas.style.height = `${baseHeight}px`;
+                
+                // Update image size to match canvas
+                this.image.style.width = `${baseWidth}px`;
+                this.image.style.height = `${baseHeight}px`;
                 
                 console.log('updateCanvasSize - Calculated values:', {
                     baseWidth,
