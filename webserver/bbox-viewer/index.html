@@ -735,24 +735,23 @@
             drawRectangles() {
                 const ctx = this.canvas.getContext('2d');
                 const dpr = window.devicePixelRatio || 1;
+                
+                // Clear the entire canvas
                 ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-                // Reset any previous transformations
-                ctx.setTransform(1, 0, 0, 1, 0, 0);
-                // Scale for DPR
-                ctx.scale(dpr, dpr);
-                ctx.imageSmoothingEnabled = false;
-
+                
+                // Reset transform and scale for DPR
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                
+                // Get the actual displayed image dimensions
+                const displayedWidth = this.image.naturalWidth;
+                const displayedHeight = this.image.naturalHeight;
 
                 this.rectangles.forEach(rect => {
-                    // Calculate actual pixel coordinates based on current image size
-                    const imageWidth = this.canvas.width / dpr;
-                    const imageHeight = this.canvas.height / dpr;
-                    
-                    const scaledX = rect.x * imageWidth;
-                    const scaledY = rect.y * imageHeight;
-                    const scaledWidth = rect.width * imageWidth;
-                    const scaledHeight = rect.height * imageHeight;
+                    // Convert normalized coordinates (0-1) to actual pixel coordinates
+                    const scaledX = rect.x * displayedWidth;
+                    const scaledY = rect.y * displayedHeight;
+                    const scaledWidth = rect.width * displayedWidth;
+                    const scaledHeight = rect.height * displayedHeight;
 
                     const borderWidth = 2;
                     const color = this.getColorForClass(rect.class);
@@ -798,7 +797,6 @@
                         // Draw text
                         ctx.fillStyle = 'white';
                         ctx.textAlign = 'left';
-                        // Ensure text is positioned at exact pixels
                         ctx.fillText(
                             labelText,
                             Math.round(labelX + padding),
