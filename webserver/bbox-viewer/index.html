@@ -633,6 +633,14 @@
             loadImage(imageName) {
                 const fullPath = this.basePath + imageName;
                 if (this.image.src !== fullPath) {
+                    console.log('Starting to load new image:', fullPath);
+                    console.log('Current image dimensions:', {
+                        naturalWidth: this.image.naturalWidth,
+                        naturalHeight: this.image.naturalHeight,
+                        clientWidth: this.image.clientWidth,
+                        clientHeight: this.image.clientHeight
+                    });
+                    
                     // Clear current image and canvas while loading
                     this.canvas.getContext('2d').clearRect(0, 0, this.canvas.width, this.canvas.height);
                     
@@ -643,8 +651,22 @@
                     
                     // Add load event listener before setting src
                     this.image.onload = () => {
+                        console.log('Image loaded:', fullPath);
+                        console.log('New image natural dimensions:', {
+                            naturalWidth: this.image.naturalWidth,
+                            naturalHeight: this.image.naturalHeight
+                        });
+                        
                         // Force a small delay to ensure browser has updated image dimensions
                         requestAnimationFrame(() => {
+                            console.log('Animation frame - before updates:', {
+                                imageClientWidth: this.image.clientWidth,
+                                imageClientHeight: this.image.clientHeight,
+                                currentCanvasWidth: this.canvas.width,
+                                currentCanvasHeight: this.canvas.height,
+                                zoomLevel: this.zoomLevel
+                            });
+                            
                             // Set initial display dimensions based on natural image size
                             if (this.image.style.display === 'none') {
                                 this.image.style.display = 'block';
@@ -659,6 +681,7 @@
                     };
                     
                     this.image.src = fullPath;
+                    console.log('Set new image src, waiting for load...');
                 }
             }
 
@@ -708,6 +731,23 @@
                 const rect = this.image.getBoundingClientRect();
                 const dpr = window.devicePixelRatio || 1;
                 
+                console.log('updateCanvasSize - Input values:', {
+                    rect: {
+                        width: rect.width,
+                        height: rect.height
+                    },
+                    dpr,
+                    zoomLevel: this.zoomLevel,
+                    imageNaturalDimensions: {
+                        width: this.image.naturalWidth,
+                        height: this.image.naturalHeight
+                    },
+                    imageClientDimensions: {
+                        width: this.image.clientWidth,
+                        height: this.image.clientHeight
+                    }
+                });
+                
                 // Calculate base dimensions (without zoom)
                 const baseWidth = rect.width / this.zoomLevel;
                 const baseHeight = rect.height / this.zoomLevel;
@@ -719,6 +759,15 @@
                 // Set display size
                 this.canvas.style.width = `${baseWidth}px`;
                 this.canvas.style.height = `${baseHeight}px`;
+                
+                console.log('updateCanvasSize - Calculated values:', {
+                    baseWidth,
+                    baseHeight,
+                    canvasWidth: this.canvas.width,
+                    canvasHeight: this.canvas.height,
+                    canvasStyleWidth: this.canvas.style.width,
+                    canvasStyleHeight: this.canvas.style.height
+                });
                 
                 const ctx = this.canvas.getContext('2d');
                 ctx.scale(dpr, dpr);
