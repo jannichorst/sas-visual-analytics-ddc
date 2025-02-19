@@ -34,10 +34,19 @@
             transform: translate(-50%, -50%);
             text-align: center;
             z-index: 3;
-            background: white;
-            padding: 20px;
             font-family: Arial, sans-serif;
             min-width: 400px;
+        }
+        
+        #error-message.error {
+            background: none;
+            padding: 20px;
+        }
+        
+        #error-message.neutral {
+            background: none;
+            box-shadow: none;
+            padding: 20px;
         }
         
         #error-message h1 {
@@ -50,16 +59,10 @@
             color: #666;
             font-size: 14px;
             word-break: break-all;
-        }
-        
-        #error-message.error {
-            background: rgba(255, 235, 235, 0.95);
-        }
-        
-        #error-message.neutral {
-            background: none;
-            box-shadow: none;
-            padding: 0;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px;
+            border-radius: 4px;
+            display: inline-block;
         }
         
         #error-message h2 {
@@ -280,8 +283,6 @@
                             transform: translate(-50%, -50%);
                             text-align: center;
                             z-index: 3;
-                            background: white;
-                            padding: 20px;
                             font-family: Arial, sans-serif;
                             min-width: 400px;
                         }
@@ -296,16 +297,21 @@
                             color: #666;
                             font-size: 14px;
                             word-break: break-all;
+                            background: rgba(255, 255, 255, 0.9);
+                            padding: 8px;
+                            border-radius: 4px;
+                            display: inline-block;
                         }
                         
                         #error-message.error {
-                            background: rgba(255, 235, 235, 0.95);
+                            background: none;
+                            padding: 20px;
                         }
                         
                         #error-message.neutral {
                             background: none;
                             box-shadow: none;
-                            padding: 0;
+                            padding: 20px;
                         }
                         
                         #error-message h2 {
@@ -619,6 +625,11 @@
 
                 // Check for unique image name across all rows
                 const imageIndex = columnIndices[this.columnMapping.image];
+                if (!imageIndex && imageIndex !== 0) {
+                    this.showError("Image column not found");
+                    return;
+                }
+
                 const uniqueImages = new Set(vaData.data.map(row => row[imageIndex]));
                 if (uniqueImages.size === 0) {
                     this.showError("No image name provided");
@@ -631,17 +642,10 @@
 
                 // Extract the image name from the first row
                 const imageName = vaData.data[0][imageIndex];
-                if (typeof imageName !== 'string') {
+                if (typeof imageName !== 'string' || !imageName) {
                     this.showError("Invalid image name format", "Image name must be a string");
                     return;
                 }
-
-                // Hide error message if it was showing
-                this.errorMessage.style.display = 'none';
-                this.image.style.display = 'block';
-
-                // Reset view using minimize function instead of manual reset
-                this.minimize();
 
                 // Convert VA data to rectangles format using column mapping
                 this.rectangles = vaData.data.map(row => ({
@@ -663,51 +667,55 @@
             // Loads an image from the configured base path
             loadImage(imageName) {
                 const fullPath = this.basePath + imageName;
-                if (this.image.src !== fullPath) {
-                    console.log('Starting to load new image:', fullPath);
+                console.log('Starting to load new image:', fullPath);
+                
+                // Clear canvas while loading
+                this.canvas.getContext('2d').clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.image.style.display = 'none';
+                this.shadowRoot.querySelector('#toolbar').classList.add('hidden');
+                
+                // Reset zoom and position before loading new image
+                this.zoomLevel = 1;
+                this.imageX = 0;
+                this.imageY = 0;
+                
+                // Add load event listener before setting src
+                this.image.onload = () => {
+                    console.log('Image loaded:', fullPath);
                     
-                    // Clear canvas but keep rectangles data for when image loads
+                    // Hide error message if it was showing
+                    this.errorMessage.style.display = 'none';
+                    
+                    // Show image and toolbar on successful load
+                    this.image.style.display = 'block';
+                    this.shadowRoot.querySelector('#toolbar').classList.remove('hidden');
+                    
+                    // Update the view
+                    requestAnimationFrame(() => {
+                        this.updateCanvasSize();
+                        this.drawRectangles();
+                        this.updateImageTransform(true);
+                        this.updateZoomSlider();
+                    });
+                };
+                
+                // Add error handler for this specific load attempt
+                this.image.onerror = (e) => {
+                    // Show error message with failed image info
+                    this.showError("Failed loading image", e.target.src, 'error');
+                    
+                    // Clear canvas and hide toolbar
                     this.canvas.getContext('2d').clearRect(0, 0, this.canvas.width, this.canvas.height);
-                    this.image.style.display = 'none';
                     this.shadowRoot.querySelector('#toolbar').classList.add('hidden');
-                    
-                    // Reset zoom and position before loading new image
-                    this.zoomLevel = 1;
-                    this.imageX = 0;
-                    this.imageY = 0;
-                    
-                    // Add load event listener before setting src
-                    this.image.onload = () => {
-                        console.log('Image loaded:', fullPath);
-                        
-                        // Hide error message if it was showing
-                        this.errorMessage.style.display = 'none';
-                        
-                        // Show image and toolbar on successful load
-                        this.image.style.display = 'block';
-                        this.shadowRoot.querySelector('#toolbar').classList.remove('hidden');
-                        
-                        // Update the view
-                        requestAnimationFrame(() => {
-                            this.updateCanvasSize();
-                            this.drawRectangles();
-                            this.updateImageTransform(true);
-                            this.updateZoomSlider();
-                        });
-                    };
-                    
-                    // Add error handler for this specific load attempt
-                    this.image.onerror = (e) => {
-                        // Show error message with failed image info
-                        this.showError("Failed loading image", e.target.src, 'error');
-                        
-                        // Clear canvas and hide toolbar
-                        this.canvas.getContext('2d').clearRect(0, 0, this.canvas.width, this.canvas.height);
-                        this.shadowRoot.querySelector('#toolbar').classList.add('hidden');
-                    };
-                    
+                };
+                
+                // Always set src to trigger load/error event
+                this.image.src = fullPath;
+                
+                // Force reload by clearing src if it's the same URL
+                if (this.image.src === fullPath) {
+                    this.image.src = '';
                     this.image.src = fullPath;
-                    console.log('Set new image src, waiting for load...');
                 }
             }
 
