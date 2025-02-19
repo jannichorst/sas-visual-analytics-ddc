@@ -20,24 +20,102 @@
             background-color: #f0f0f0;
         }
         
-        image-zoom-app {
+        bbox-viewer-app {
             width: 100%;
             height: 100%;
             display: block;
         }
+        
+        #error-message {
+            display: none;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 3;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        #error-message.error {
+            background: rgba(255, 235, 235, 0.9);
+        }
+        
+        #error-message.neutral {
+            background: rgba(255, 255, 255, 0.9);
+        }
+        
+        #error-message h3 {
+            margin-top: 0;
+        }
+        
+        #error-message.neutral h3 {
+            display: none;
+        }
+        
+        .mapping-info {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #666;
+            text-align: left;
+        }
+        
+        .mapping-toggle {
+            color: #666;
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 0.8em;
+            margin-top: 10px;
+            display: block;
+        }
+        
+        .mapping-details {
+            display: none;
+            margin-top: 10px;
+        }
+        
+        .mapping-details.show {
+            display: block;
+        }
+        
+        .mapping-row {
+            margin: 5px 0;
+            font-size: 0.8em;
+        }
+        
+        .mapping-label {
+            font-weight: bold;
+            color: #444;
+        }
     </style>
 </head>
 <body>
-    <image-zoom-app></image-zoom-app>
+    <bbox-viewer-app></bbox-viewer-app>
     <!-- <div id="debug-panel"></div> -->
 
     <script>
-        class ImageZoomApp extends HTMLElement {
+        class BboxViewerApp extends HTMLElement {
             constructor() {
                 super();
                 this.attachShadow({ mode: 'open' });
                 this.basePath = './images/'; // Base path for images - can be configured
                 this.disableInteraction = false; // New property to control interaction
+                
+                // Define column mapping for easier adjustments
+                this.columnMapping = {
+                    image: 'image',
+                    x: 'x',
+                    y: 'y',
+                    width: 'width',
+                    height: 'height',
+                    class: 'class',
+                    probability: 'proba',
+                    id: 'id'
+                };
+                
                 this.shadowRoot.innerHTML = `
                     <style>
                         :host {
@@ -133,19 +211,6 @@
                             top: 10px;
                             left: 10px;
                         }
-                        #error-message {
-                            display: none;
-                            position: absolute;
-                            left: 50%;
-                            top: 50%;
-                            transform: translate(-50%, -50%);
-                            text-align: center;
-                            z-index: 3;
-                            background: rgba(255, 255, 255, 0.9);
-                            padding: 20px;
-                            border-radius: 5px;
-                            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-                        }
                     </style>
                     <div id="app-container">
                         <div id="image-container">
@@ -155,6 +220,10 @@
                                 <h3>Error</h3>
                                 <p id="error-text"></p>
                                 <p id="error-details"></p>
+                                <div id="mapping-info" class="mapping-info">
+                                    <span class="mapping-toggle">Show expected data format ▼</span>
+                                    <div class="mapping-details"></div>
+                                </div>
                             </div>
                         </div>
                         <div id="toolbar">
@@ -255,40 +324,79 @@
                     this.updateCanvasSize();
                 });
                 this.resizeObserver.observe(this.imageContainer);
+
+                // Add click handler for mapping toggle
+                this.shadowRoot.querySelector('.mapping-toggle').addEventListener('click', (e) => {
+                    const details = this.shadowRoot.querySelector('.mapping-details');
+                    const toggle = e.target;
+                    if (details.classList.contains('show')) {
+                        details.classList.remove('show');
+                        toggle.textContent = 'Show expected data format ▼';
+                    } else {
+                        details.classList.add('show');
+                        toggle.textContent = 'Hide expected data format ▲';
+                    }
+                });
+
+                // Initialize mapping explanations
+                this.updateMappingExplanations();
             }
 
-            showError(message, details = '') {
+            // Displays an error message and hides the image
+            showError(message, details = '', type = 'error') {
                 this.errorMessage.style.display = 'block';
                 this.image.style.display = 'none';
                 this.errorText.textContent = message;
                 this.errorDetails.textContent = details ? `Details: ${details}` : '';
+                
+                // Reset classes and apply the appropriate one
+                this.errorMessage.classList.remove('error', 'neutral');
+                this.errorMessage.classList.add(type);
+                
+                // Show/hide mapping info based on message type
+                const mappingInfo = this.shadowRoot.querySelector('#mapping-info');
+                if (type === 'neutral' && message === "Select an image to view") {
+                    mappingInfo.style.display = 'block';
+                    this.updateMappingExplanations(); // Refresh explanations
+                } else {
+                    mappingInfo.style.display = 'none';
+                }
+                
                 this.rectangles = [];
                 this.drawRectangles();
             }
 
+            // Handles incoming data from VA and processes it for display
             onMessage(event) {
                 if (!event || !event.data) return;
                 
                 const vaData = event.data;
                 
-                if (!vaData.data || !Array.isArray(vaData.data) || vaData.data.length === 0) {
+                if (!vaData.data || !Array.isArray(vaData.data) || vaData.data.length === 0 || !vaData.columns) {
                     this.showError("Invalid data format received");
                     return;
                 }
 
+                // Create a map of column labels to indices
+                const columnIndices = {};
+                vaData.columns.forEach((col, index) => {
+                    columnIndices[col.label] = index;
+                });
+
                 // Check for unique image name across all rows
-                const uniqueImages = new Set(vaData.data.map(row => row[0]));
+                const imageIndex = columnIndices[this.columnMapping.image];
+                const uniqueImages = new Set(vaData.data.map(row => row[imageIndex]));
                 if (uniqueImages.size === 0) {
                     this.showError("No image name provided");
                     return;
                 }
                 if (uniqueImages.size > 1) {
-                    this.showError("Multiple different images detected", "Please ensure all bounding boxes refer to the same image");
+                    this.showError("Select an image to view", '', 'neutral');
                     return;
                 }
 
                 // Extract the image name from the first row
-                const imageName = vaData.data[0][0];
+                const imageName = vaData.data[0][imageIndex];
                 if (typeof imageName !== 'string') {
                     this.showError("Invalid image name format", "Image name must be a string");
                     return;
@@ -301,22 +409,23 @@
                 // Load the image
                 this.loadImage(imageName);
 
-                // Convert VA data to rectangles format
+                // Convert VA data to rectangles format using column mapping
                 this.rectangles = vaData.data.map(row => ({
-                    x: row[1],          // x coordinate
-                    y: row[2],          // y coordinate
-                    width: row[3],      // width
-                    height: row[4],     // height
-                    class: row[5],      // class name
-                    probability: row[6], // probability
-                    id: row[7],         // id
-                    hovered: false      // initialize as not hovered
+                    x: row[columnIndices[this.columnMapping.x]],
+                    y: row[columnIndices[this.columnMapping.y]],
+                    width: row[columnIndices[this.columnMapping.width]],
+                    height: row[columnIndices[this.columnMapping.height]],
+                    class: row[columnIndices[this.columnMapping.class]],
+                    probability: row[columnIndices[this.columnMapping.probability]],
+                    id: row[columnIndices[this.columnMapping.id]],
+                    hovered: false
                 }));
 
                 this.drawRectangles();
                 this.updateDebugPanel();
             }
 
+            // Loads an image from the configured base path
             loadImage(imageName) {
                 const fullPath = this.basePath + imageName;
                 if (this.image.src !== fullPath) {
@@ -324,6 +433,7 @@
                 }
             }
 
+            // Updates the base path for image loading
             setBasePath(path) {
                 this.basePath = path.endsWith('/') ? path : path + '/';
                 if (this.image.src) {
@@ -332,6 +442,7 @@
                 }
             }
 
+            // Updates the debug panel with current state information
             updateDebugPanel() {
                 if (this.debugPanel) {
                     const debugInfo = `
@@ -350,6 +461,7 @@
                 }
             }
 
+            // Handles mouse wheel events for zooming
             handleWheel(event) {
                 if (this.disableInteraction) return;
                 event.preventDefault();
@@ -361,6 +473,7 @@
                 this.updateDebugPanel();
             }
 
+            // Updates canvas dimensions and scaling based on image size and device pixel ratio
             updateCanvasSize() {
                 const rect = this.image.getBoundingClientRect();
                 const dpr = window.devicePixelRatio || 1;
@@ -381,6 +494,7 @@
                 this.updateDebugPanel();
             }
 
+            // Returns a color for a class name, using predefined colors or fallback colors
             getColorForClass(className) {
                 // Check if we already have a color for this class
                 if (this.colorCache.has(className)) {
@@ -402,6 +516,7 @@
                 return color;
             }
 
+            // Renders all bounding box rectangles on the canvas
             drawRectangles() {
                 const ctx = this.canvas.getContext('2d');
                 const dpr = window.devicePixelRatio || 1;
@@ -473,6 +588,7 @@
                 });
             }
 
+            // Handles mouse hover events over the canvas and updates rectangle hover states
             handleCanvasHover(event) {
                 const rect = this.canvas.getBoundingClientRect();
                 const mouseX = event.clientX - rect.left;
@@ -510,6 +626,7 @@
                 }
             }
 
+            // Increases zoom level by a fixed increment
             zoomIn() {
                 if (this.disableInteraction) return;
                 this.zoomLevel = Math.min(3, this.zoomLevel + 0.15);
@@ -518,6 +635,7 @@
                 this.updateDebugPanel();
             }
 
+            // Decreases zoom level by a fixed increment
             zoomOut() {
                 if (this.disableInteraction) return;
                 this.zoomLevel = Math.max(0.2, this.zoomLevel - 0.15);
@@ -526,6 +644,7 @@
                 this.updateDebugPanel();
             }
 
+            // Updates zoom level based on slider value
             sliderZoom() {
                 if (this.disableInteraction) return;
                 this.zoomLevel = this.zoomSlider.value / 100;
@@ -533,6 +652,7 @@
                 this.updateDebugPanel();
             }
 
+            // Fits the image to the container while maintaining aspect ratio
             maximize() {
                 if (this.disableInteraction) return;
                 const containerWidth = this.shadowRoot.querySelector('#image-container').clientWidth;
@@ -549,6 +669,7 @@
                 this.updateDebugPanel();
             }
 
+            // Resets zoom and position to default values
             minimize() {
                 if (this.disableInteraction) return;
                 this.zoomLevel = 1;
@@ -559,6 +680,7 @@
                 this.updateDebugPanel();
             }
 
+            // Initiates image dragging operation
             startDrag(event) {
                 if (this.disableInteraction) return;
                 this.isDragging = true;
@@ -570,6 +692,7 @@
                 this.updateDebugPanel();
             }
 
+            // Updates image position during drag operation
             drag(event) {
                 if (!this.isDragging) return;
 
@@ -579,6 +702,7 @@
                 this.updateDebugPanel();
             }
 
+            // Completes drag operation and restores smooth transitions
             endDrag() {
                 this.isDragging = false;
                 this.image.classList.add('smooth');
@@ -586,10 +710,12 @@
                 this.updateDebugPanel();
             }
 
+            // Synchronizes zoom slider UI with current zoom level
             updateZoomSlider() {
                 this.zoomSlider.value = this.zoomLevel * 100;
             }
 
+            // Updates image and canvas transform properties for zoom and pan
             updateImageTransform(smooth) {
                 const transformValue = `translate(-50%, -50%) scale(${this.zoomLevel}) translate(${this.imageX / this.zoomLevel}px, ${this.imageY / this.zoomLevel}px)`;
                 if (smooth) {
@@ -606,6 +732,7 @@
                 this.updateDebugPanel();
             }
 
+            // Enables or disables user interaction with the viewer
             setDisableInteraction(disabled) {
                 this.disableInteraction = disabled;
                 const toolbar = this.shadowRoot.querySelector('#toolbar');
@@ -620,9 +747,31 @@
                     toolbar.classList.remove('hidden');
                 }
             }
+
+            // Updates the mapping explanations based on current column mapping
+            updateMappingExplanations() {
+                const mappingDetails = this.shadowRoot.querySelector('.mapping-details');
+                const explanations = {
+                    image: 'Name of the image file in the dataset',
+                    x: 'Center X-coordinate of the bounding box (normalized 0-1)',
+                    y: 'Center Y-coordinate of the bounding box (normalized 0-1)',
+                    width: 'Width of the bounding box relative to image width (normalized 0-1)',
+                    height: 'Height of the bounding box relative to image height (normalized 0-1)',
+                    class: 'Classification label of the detected object',
+                    probability: 'Confidence score of the detection (0-1)',
+                    id: 'Unique numerical identifier for each detection'
+                };
+
+                mappingDetails.innerHTML = Object.entries(this.columnMapping)
+                    .map(([key, label]) => `
+                        <div class="mapping-row">
+                            <span class="mapping-label">${label}:</span> ${explanations[key]}
+                        </div>
+                    `).join('');
+            }
         }
 
-        customElements.define('image-zoom-app', ImageZoomApp);
+        customElements.define('bbox-viewer-app', BboxViewerApp);
     </script>
 </body>
 </html>
