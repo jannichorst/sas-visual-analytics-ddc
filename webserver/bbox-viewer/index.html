@@ -303,7 +303,7 @@
                                     <h2>elect a single image to view</h2>
                                     <h4>Expected Variables</h4>
                                     <div class="mapping-details"></div>
-                                    <div class="base-path-info">Current base path: ${this.basePath}</div>
+                                    <div class="base-path-info">Current basepath parameter: ${this.basePath}</div>
                                 </div>
                             </div>
                         </div>
@@ -471,6 +471,14 @@
                 if (!vaData.data || !Array.isArray(vaData.data) || vaData.data.length === 0 || !vaData.columns) {
                     this.showError("Invalid data format received");
                     return;
+                }
+
+                // Check for basepath parameter and update if found
+                if (vaData.parameters) {
+                    const basepathParam = vaData.parameters.find(p => p.label === "basepath");
+                    if (basepathParam && basepathParam.value) {
+                        this.setBasePath(basepathParam.value);
+                    }
                 }
 
                 // Create a map of column labels to indices
