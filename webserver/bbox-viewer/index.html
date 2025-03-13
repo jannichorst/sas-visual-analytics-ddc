@@ -264,7 +264,7 @@
                             transform: scale(0.9);
                         }
 
-                        .view-control img {
+                        .view-control svg {
                             width: 30px;
                             height: 30px;
                             margin: 0 5px;
@@ -309,11 +309,27 @@
                         </div>
                         <!-- Icons from https://heroicons.com MIT License -->
                         <div id="toolbar">
-                            <div class="view-control"><img id="zoom-out" src="icons/remove-outline.svg" alt="Zoom Out"></div>
+                            <div class="view-control">
+                                <svg id="zoom-out" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="30" height="30">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14" />
+                                </svg>
+                            </div>
                             <input type="range" id="zoom-slider" min="20" max="300" value="100">
-                            <div class="view-control"><img id="zoom-in" src="icons/add-outline.svg" alt="Zoom In"></div>
-                            <div class="view-control"><img id="maximize" src="icons/expand-outline.svg" alt="Maximize"></div>
-                            <div class="view-control"><img id="minimize" src="icons/scan-outline.svg" alt="Minimize"></div>
+                            <div class="view-control">
+                                <svg id="zoom-in" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="30" height="30">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                </svg>
+                            </div>
+                            <div class="view-control">
+                                <svg id="maximize" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="30" height="30">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                                </svg>
+                            </div>
+                            <div class="view-control">
+                                <svg id="minimize" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="30" height="30">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 9V4.5M9 9H4.5M9 9 3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5 5.25 5.25" />
+                                </svg>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -322,11 +338,11 @@
                 this.image = this.shadowRoot.querySelector('#image');
                 this.canvas = this.shadowRoot.querySelector('#overlay');
                 this.imageContainer = this.shadowRoot.querySelector('#image-container');
-                this.zoomInButton = this.shadowRoot.querySelector('#zoom-in');
-                this.zoomOutButton = this.shadowRoot.querySelector('#zoom-out');
+                this.zoomInButton = this.shadowRoot.querySelector('#zoom-in').parentElement;
+                this.zoomOutButton = this.shadowRoot.querySelector('#zoom-out').parentElement;
                 this.zoomSlider = this.shadowRoot.querySelector('#zoom-slider');
-                this.maximizeButton = this.shadowRoot.querySelector('#maximize');
-                this.minimizeButton = this.shadowRoot.querySelector('#minimize');
+                this.maximizeButton = this.shadowRoot.querySelector('#maximize').parentElement;
+                this.minimizeButton = this.shadowRoot.querySelector('#minimize').parentElement;
                 this.debugPanel = document.querySelector('#debug-panel');
                 this.errorMessage = this.shadowRoot.querySelector('#error-message');
                 this.errorText = this.shadowRoot.querySelector('#error-text');
@@ -474,7 +490,7 @@
                 const vaData = event.data;
                 
                 if (!vaData.data || !Array.isArray(vaData.data) || vaData.data.length === 0 || !vaData.columns) {
-                    this.showError("Invalid data format received");
+                    this.showError("Invalid data format received")
                     return;
                 }
 
