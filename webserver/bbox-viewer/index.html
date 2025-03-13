@@ -33,24 +33,47 @@
     <!-- <div id="debug-panel"></div> -->
 
     <script>
+        /**
+         * BboxViewerApp - A web component for visualizing bounding box annotations on images
+         * 
+         * This component allows users to:
+         * - View images with bounding box annotations from object detection results
+         * - Zoom and pan to inspect details
+         * - See class labels and confidence scores on hover
+         * - Receive data dynamically from SAS Visual Analytics or other sources
+         * 
+         * The component expects data with normalized bounding box coordinates (0-1 range)
+         * and can be configured via the columnMapping property to adapt to different data formats.
+         * 
+         * Usage Example:
+         * <bbox-viewer-app></bbox-viewer-app>
+         * 
+         * The component will listen for message events with properly formatted data.
+         */
         class BboxViewerApp extends HTMLElement {
             constructor() {
                 super();
                 this.attachShadow({ mode: 'open' });
+                
+                // === Configuration ===
+                // Default settings that can be overridden
                 this.basePath = './images/';
                 this.disableInteraction = false;
                 
+                // Column mapping configuration - defines how incoming data fields map to component expectations
                 this.columnMapping = {
-                    image: 'image',
-                    x: 'x',
-                    y: 'y',
-                    width: 'width',
-                    height: 'height',
-                    class: 'class',
-                    probability: 'proba',
-                    id: 'id'
+                    image: 'image',     // Image filename or path
+                    left: 'left',       // Left coordinate (normalized 0-1)
+                    top: 'top',         // Top coordinate (normalized 0-1)
+                    width: 'width',     // Width (normalized 0-1)
+                    height: 'height',   // Height (normalized 0-1)
+                    class: 'class',     // Object class/category name
+                    probability: 'proba', // Detection confidence (0-1)
+                    id: 'id'            // Unique identifier
                 };
                 
+                // === DOM Structure ===
+                // Define the shadow DOM content
                 this.shadowRoot.innerHTML = `
                     <style>
                         /* Component root styles */
@@ -130,9 +153,10 @@
                         }
 
                         #error-message h1,
-                        #error-message.error h2 {
+                        #error-message h2 {
                             color: #d32f2f;
-                            margin: 0 0 20px 0;
+                            margin-top: 0;
+                            margin-bottom: 15px;
                         }
 
                         #error-message h1 {
@@ -193,6 +217,12 @@
                             font-size: 13px;
                             background: none;
                             box-shadow: none;
+                        }
+
+                        #error-message .mapping-info {
+                            margin-top: 20px;
+                            border-top: 1px solid #ddd;
+                            padding-top: 15px;
                         }
 
                         .mapping-info h4 {
@@ -334,6 +364,8 @@
                     </div>
                 `;
 
+                // === DOM Element References ===
+                // Store references to key DOM elements for later manipulation
                 this.zoomLevel = 1;
                 this.image = this.shadowRoot.querySelector('#image');
                 this.canvas = this.shadowRoot.querySelector('#overlay');
@@ -348,6 +380,8 @@
                 this.errorText = this.shadowRoot.querySelector('#error-text');
                 this.errorDetails = this.shadowRoot.querySelector('#error-details');
 
+                // === State Initialization ===
+                // Initialize state variables for tracking position and interactions
                 this.imageX = 0;
                 this.imageY = 0;
                 this.isDragging = false;
@@ -359,9 +393,11 @@
                     this.shadowRoot.querySelector('#toolbar').classList.add('hidden');
                 }
 
-                // Color mapping system
+                // === Color Management ===
+                // Setup color system for visualizing different object classes
                 this.colorCache = new Map();
-                // Predefined colors for common classes (like in skeleton example)
+                
+                // Predefined colors for common classes
                 this.predefinedColors = {
                     'person': 'rgb(31, 119, 180)',  // Blue
                     'car': 'rgb(255, 127, 14)',     // Orange
@@ -370,6 +406,7 @@
                     'bicycle': 'rgb(148, 103, 189)', // Purple
                     'motorcycle': 'rgb(140, 86, 75)', // Brown
                 };
+                
                 // Additional distinct colors for unknown classes
                 this.fallbackColors = [
                     'rgb(227, 119, 194)', // Pink
@@ -388,18 +425,23 @@
                 // Initialize empty rectangles array
                 this.rectangles = [];
 
-                // Store the original image dimensions when image loads
+                // === Event Binding ===
+                // Bind DOM events to component methods
+                // Image loading events
                 this.image.addEventListener('load', () => {
                     this.originalImageWidth = this.image.naturalWidth;
                     this.originalImageHeight = this.image.naturalHeight;
                     this.updateCanvasSize();
                 });
                 
+                // Toolbar control events
                 this.zoomInButton.addEventListener('click', () => this.zoomIn());
                 this.zoomOutButton.addEventListener('click', () => this.zoomOut());
                 this.zoomSlider.addEventListener('input', () => this.sliderZoom());
                 this.maximizeButton.addEventListener('click', () => this.maximize());
                 this.minimizeButton.addEventListener('click', () => this.minimize());
+                
+                // Image and canvas events
                 this.image.addEventListener('load', () => this.updateCanvasSize());
                 this.imageContainer.addEventListener('mousedown', (e) => this.startDrag(e));
                 this.imageContainer.addEventListener('mousemove', (e) => this.drag(e));
@@ -408,13 +450,16 @@
                 this.imageContainer.addEventListener('wheel', (e) => this.handleWheel(e));
                 this.canvas.addEventListener('mousemove', (e) => this.handleCanvasHover(e));
 
-                // Add message event listener for VA data
+                // === External Communication ===
+                // Setup event listener for receiving data from VA
                 if (window.addEventListener) {
                     window.addEventListener("message", (event) => this.onMessage(event), false);
                 } else {
                     window.attachEvent("onmessage", (event) => this.onMessage(event));
                 }
 
+                // === Initialization ===
+                // Complete setup and initial rendering
                 this.updateDebugPanel();
 
                 // Add ResizeObserver to handle window resizing
@@ -443,8 +488,16 @@
                 this.updateBasepathDisplay();
             }
 
-            // Displays an error message and hides the image
-            showError(message, details = '', type = 'error') {
+            // === Core Methods ===
+
+            /**
+             * Displays an error message and hides the image
+             * @param {string} message - The main error message to display
+             * @param {string} details - Additional error details (like a file path)
+             * @param {string} type - Error type: 'error' or 'neutral' for informational messages
+             * @param {boolean} isDataFormatError - Whether this is a data format error (should show expected variables)
+             */
+            showError(message, details = '', type = 'error', isDataFormatError = false) {
                 this.errorMessage.style.display = 'block';
                 this.image.style.display = 'none';
                 
@@ -452,45 +505,60 @@
                 this.errorMessage.classList.remove('error', 'neutral');
                 this.errorMessage.classList.add(type);
                 
-                const mappingInfo = this.shadowRoot.querySelector('#mapping-info');
-                
-                if (type === 'error') {
-                    // For error messages, show error state
-                    mappingInfo.style.display = 'none';
+                if (type === 'neutral' || isDataFormatError) {
+                    // For neutral messages or data format errors, show mapping info
                     this.errorMessage.innerHTML = `
-                        <h1>${message}</h1>
-                        <div class="error-path">${details}</div>
-                    `;
-                } else {
-                    // For neutral messages (like no selection), show mapping info
-                    // Reset the error message HTML completely
-                    this.errorMessage.innerHTML = `
+                        <div>
+                            ${type === 'error' ? `<h1>${message}</h1>` : `<h2>${message}</h2>`}
+                            ${details ? `<div class="error-path">${details}</div>` : ''}
+                        </div>
                         <div id="mapping-info" class="mapping-info">
-                            <h2>Select a single image to view</h2>
                             <h4>Expected Variables</h4>
                             <div class="mapping-details"></div>
                             <div class="base-path-info"></div>
                         </div>
                     `;
-                    // Get the new mapping info element and show it
-                    const newMappingInfo = this.shadowRoot.querySelector('#mapping-info');
-                    newMappingInfo.style.display = 'block';
+                    
+                    // Update the mapping explanations and basepath display
                     this.updateMappingExplanations();
-                    this.updateBasepathDisplay();  // Update the basepath display after recreating the HTML
+                    this.updateBasepathDisplay();
+                } else {
+                    // For other error types (like file loading errors), use the original approach
+                    this.errorMessage.innerHTML = `
+                        <h1>${message}</h1>
+                        <div class="error-path">${details}</div>
+                    `;
                 }
                 
                 this.rectangles = [];
                 this.drawRectangles();
             }
 
-            // Handles incoming data from VA and processes it for display
+            /**
+             * Handles incoming data from VA and processes it for display
+             * @param {MessageEvent} event - The message event containing VA data
+             */
             onMessage(event) {
-                if (!event || !event.data) return;
+                if (!event || !event.data) {
+                    console.error("BboxViewer: Received empty or invalid message event");
+                    return;
+                }
                 
                 const vaData = event.data;
                 
-                if (!vaData.data || !Array.isArray(vaData.data) || vaData.data.length === 0 || !vaData.columns) {
-                    this.showError("Invalid data format received")
+                // Validate data structure
+                if (!vaData.data || !Array.isArray(vaData.data)) {
+                    this.showError("Invalid data format received", "Data array is missing or not an array", 'error', true);
+                    return;
+                }
+                
+                if (vaData.data.length === 0) {
+                    this.showError("No data received", "The data array is empty", 'error', true);
+                    return;
+                }
+                
+                if (!vaData.columns) {
+                    this.showError("Invalid data format received", "Columns definition is missing", 'error', true);
                     return;
                 }
 
@@ -508,48 +576,79 @@
                     columnIndices[col.label] = index;
                 });
 
-                // Check for unique image name across all rows
+                // Check for image column
                 const imageIndex = columnIndices[this.columnMapping.image];
-                if (!imageIndex && imageIndex !== 0) {
-                    this.showError("Image column not found");
+                if (imageIndex === undefined) {
+                    this.showError(
+                        "Image column not found", 
+                        `Column '${this.columnMapping.image}' is missing from data. Available columns: ${vaData.columns.map(c => c.label).join(', ')}`,
+                        'error',
+                        true
+                    );
                     return;
                 }
 
+                // Validate image data
                 const uniqueImages = new Set(vaData.data.map(row => row[imageIndex]));
                 if (uniqueImages.size === 0) {
-                    this.showError("No image name provided");
+                    this.showError("No image name provided", "The image column contains no values", 'error', true);
                     return;
                 }
+                
                 if (uniqueImages.size > 1) {
-                    this.showError("Select an image to view", '', 'neutral');
+                    this.showError("Multiple images detected", "Select a single image to view", 'neutral');
                     return;
                 }
 
                 // Extract the image name from the first row
                 const imageName = vaData.data[0][imageIndex];
                 if (typeof imageName !== 'string' || !imageName) {
-                    this.showError("Invalid image name format", "Image name must be a string");
+                    this.showError("Invalid image name format", "Image name must be a non-empty string", 'error', true);
                     return;
                 }
 
-                // Convert VA data to rectangles format using column mapping
-                this.rectangles = vaData.data.map(row => ({
-                    x: row[columnIndices[this.columnMapping.x]],
-                    y: row[columnIndices[this.columnMapping.y]],
-                    width: row[columnIndices[this.columnMapping.width]],
-                    height: row[columnIndices[this.columnMapping.height]],
-                    class: row[columnIndices[this.columnMapping.class]],
-                    probability: row[columnIndices[this.columnMapping.probability]],
-                    id: row[columnIndices[this.columnMapping.id]],
-                    hovered: false
-                }));
+                // Validate required column existence
+                const requiredColumns = ['left', 'top', 'width', 'height'];
+                const missingColumns = requiredColumns
+                    .map(col => this.columnMapping[col])
+                    .filter(mappedCol => columnIndices[mappedCol] === undefined);
+                
+                if (missingColumns.length > 0) {
+                    this.showError(
+                        "Missing required columns",
+                        `The following columns are missing: ${missingColumns.join(', ')}`,
+                        'error',
+                        true
+                    );
+                    return;
+                }
 
-                // Load the image - this will trigger onload which updates canvas and draws rectangles
-                this.loadImage(imageName);
-                this.updateDebugPanel();
+                try {
+                    // Convert VA data to rectangles format using column mapping
+                    this.rectangles = vaData.data.map(row => ({
+                        left: parseFloat(row[columnIndices[this.columnMapping.left]]) || 0,
+                        top: parseFloat(row[columnIndices[this.columnMapping.top]]) || 0,
+                        width: parseFloat(row[columnIndices[this.columnMapping.width]]) || 0,
+                        height: parseFloat(row[columnIndices[this.columnMapping.height]]) || 0,
+                        class: row[columnIndices[this.columnMapping.class]] || 'unknown',
+                        probability: parseFloat(row[columnIndices[this.columnMapping.probability]]) || 1.0,
+                        id: row[columnIndices[this.columnMapping.id]] || `rect-${Math.random().toString(36).substr(2, 9)}`,
+                        hovered: false
+                    }));
+
+                    // Load the image - this will trigger onload which updates canvas and draws rectangles
+                    this.loadImage(imageName);
+                    this.updateDebugPanel();
+                } catch (error) {
+                    console.error("Error processing data:", error);
+                    this.showError("Error processing data", error.message, 'error', true);
+                }
             }
 
-            // Loads an image from the configured base path
+            /**
+             * Loads an image from the configured base path
+             * @param {string} imageName - The filename or relative path of the image
+             */
             loadImage(imageName) {
                 const fullPath = this.basePath + imageName;
                 console.log('Starting to load new image:', fullPath);
@@ -604,7 +703,10 @@
                 }
             }
 
-            // Updates the base path for image loading
+            /**
+             * Updates the base path for image loading
+             * @param {string} path - The new base path to use for image URLs
+             */
             setBasePath(path) {
                 this.basePath = path.endsWith('/') ? path : path + '/';
                 this.updateBasepathDisplay();
@@ -614,7 +716,9 @@
                 }
             }
 
-            // New method to update basepath display
+            /**
+             * Updates the base path display in the user interface
+             */
             updateBasepathDisplay() {
                 const basePathInfo = this.shadowRoot.querySelector('.base-path-info');
                 if (basePathInfo) {
@@ -622,7 +726,10 @@
                 }
             }
 
-            // Updates the debug panel with current state information
+            /**
+             * Updates the debug panel with current state information
+             * This is mainly used during development
+             */
             updateDebugPanel() {
                 if (this.debugPanel) {
                     const debugInfo = `
@@ -634,14 +741,17 @@
                         <div>Canvas Width: ${this.canvas.width}</div>
                         <div>Canvas Height: ${this.canvas.height}</div>
                         ${this.rectangles.map((rect, index) => `
-                            <div>Rectangle ${index + 1} - X: ${rect.x}, Y: ${rect.y}, Width: ${rect.width}, Height: ${rect.height}, Hovered: ${rect.hovered}, Class: ${rect.class}, Probability: ${(rect.probability * 100).toFixed(1)}%</div>
+                            <div>Rectangle ${index + 1} - X: ${rect.left}, Y: ${rect.top}, Width: ${rect.width}, Height: ${rect.height}, Hovered: ${rect.hovered}, Class: ${rect.class}, Probability: ${(rect.probability * 100).toFixed(1)}%</div>
                         `).join('')}
                     `;
                     this.debugPanel.innerHTML = debugInfo;
                 }
             }
 
-            // Handles mouse wheel events for zooming
+            /**
+             * Handles mouse wheel events for zooming
+             * @param {WheelEvent} event - The wheel event
+             */
             handleWheel(event) {
                 if (this.disableInteraction) return;
                 event.preventDefault();
@@ -653,7 +763,10 @@
                 this.updateDebugPanel();
             }
 
-            // Updates canvas dimensions and scaling based on image size and device pixel ratio
+            /**
+             * Updates canvas dimensions and scaling based on image size and device pixel ratio
+             * This ensures proper rendering on all devices including high-DPI displays
+             */
             updateCanvasSize() {
                 const dpr = window.devicePixelRatio || 1;
                 
@@ -714,7 +827,11 @@
                 this.updateDebugPanel();
             }
 
-            // Returns a color for a class name, using predefined colors or fallback colors
+            /**
+             * Returns a color for a class name, using predefined colors or fallback colors
+             * @param {string} className - The class name to get a color for
+             * @return {string} A CSS rgb color string
+             */
             getColorForClass(className) {
                 // Check if we already have a color for this class
                 if (this.colorCache.has(className)) {
@@ -736,7 +853,10 @@
                 return color;
             }
 
-            // Renders all bounding box rectangles on the canvas
+            /**
+             * Renders all bounding box rectangles on the canvas
+             * This draws colored rectangles and labels for all annotations
+             */
             drawRectangles() {
                 const ctx = this.canvas.getContext('2d');
                 const dpr = window.devicePixelRatio || 1;
@@ -753,8 +873,8 @@
 
                 this.rectangles.forEach(rect => {
                     // Convert normalized coordinates (0-1) to actual pixel coordinates
-                    const scaledX = rect.x * displayedWidth;
-                    const scaledY = rect.y * displayedHeight;
+                    const scaledX = rect.left * displayedWidth;
+                    const scaledY = rect.top * displayedHeight;
                     const scaledWidth = rect.width * displayedWidth;
                     const scaledHeight = rect.height * displayedHeight;
 
@@ -811,7 +931,12 @@
                 });
             }
 
-            // Handles mouse hover events over the canvas and updates rectangle hover states
+            // === User Interaction Methods ===
+            
+            /**
+             * Handles mouse hover events over the canvas and updates rectangle hover states
+             * @param {MouseEvent} event - The mouse move event
+             */
             handleCanvasHover(event) {
                 const rect = this.canvas.getBoundingClientRect();
                 const mouseX = event.clientX - rect.left;
@@ -824,8 +949,8 @@
                 let hoveredAny = false;
                 this.rectangles.forEach(rect => {
                     // Compare with normalized coordinates
-                    const centerX = rect.x;
-                    const centerY = rect.y;
+                    const centerX = rect.left;
+                    const centerY = rect.top;
                     
                     if (relativeX >= centerX && 
                         relativeX <= centerX + rect.width && 
@@ -853,7 +978,11 @@
                 }
             }
 
-            // Increases zoom level by a fixed increment
+            // === View Control Methods ===
+            
+            /**
+             * Increases zoom level by a fixed increment
+             */
             zoomIn() {
                 if (this.disableInteraction) return;
                 this.zoomLevel = Math.min(3, this.zoomLevel + 0.15);
@@ -975,13 +1104,17 @@
                 }
             }
 
-            // Updates the mapping explanations based on current column mapping
+            // === Data Handling Methods ===
+            
+            /**
+             * Updates the mapping explanations based on current column mapping
+             */
             updateMappingExplanations() {
                 const mappingDetails = this.shadowRoot.querySelector('.mapping-details');
                 const explanations = {
                     image: 'Name of the image file or local path. (mind the base path)',
-                    x: 'X-coordinate of the top left corner bounding box corner (normalized 0-1)',
-                    y: 'Y-coordinate of the top left corner bounding box corner (normalized 0-1)',
+                    left: 'X coordinate of the top left bounding box corner (normalized 0-1)',
+                    top: 'Y coordinate of the top left bounding box corner (normalized 0-1)',
                     width: 'Width of the bounding box relative to image width (normalized 0-1)',
                     height: 'Height of the bounding box relative to image height (normalized 0-1)',
                     class: 'Classification label of the detected object',
@@ -997,9 +1130,100 @@
                         </div>
                     `).join('');
             }
+
+            // === API Methods ===
+            
+            /**
+             * Configure the component with custom settings
+             * @param {Object} config - Configuration object with the following optional properties:
+             * @param {string} config.basePath - Base path for image loading
+             * @param {boolean} config.disableInteraction - Whether to disable user interaction
+             * @param {Object} config.columnMapping - Custom column mapping
+             * @param {Object} config.classColors - Custom colors for specific classes
+             * @return {BboxViewerApp} The component instance for chaining
+             */
+            configure(config = {}) {
+                // Process configuration options
+                if (config.basePath !== undefined) {
+                    this.setBasePath(config.basePath);
+                }
+                
+                if (config.disableInteraction !== undefined) {
+                    this.setDisableInteraction(config.disableInteraction);
+                }
+                
+                if (config.columnMapping) {
+                    // Merge with existing mapping, preserving defaults for unspecified columns
+                    this.columnMapping = {
+                        ...this.columnMapping,
+                        ...config.columnMapping
+                    };
+                    
+                    // Update explanations to reflect changes
+                    this.updateMappingExplanations();
+                }
+                
+                if (config.classColors && typeof config.classColors === 'object') {
+                    // Add custom colors to predefined colors
+                    this.predefinedColors = {
+                        ...this.predefinedColors,
+                        ...config.classColors
+                    };
+                    
+                    // Clear color cache to ensure new colors are used
+                    this.colorCache.clear();
+                    
+                    // Redraw if we have rectangles
+                    if (this.rectangles.length > 0) {
+                        this.drawRectangles();
+                    }
+                }
+                
+                return this;
+            }
+            
+            /**
+             * Public API method to report an error externally
+             * This can be called from outside the component
+             * @param {string} message - The error message to display
+             * @param {string} details - Any error details
+             * @param {boolean} isDataFormatError - Whether to show expected variables (defaults to false)
+             * @return {BboxViewerApp} The component instance for chaining
+             */
+            reportError(message, details = '', isDataFormatError = false) {
+                this.showError(message, details, 'error', isDataFormatError);
+                return this;
+            }
         }
 
         customElements.define('bbox-viewer-app', BboxViewerApp);
     </script>
+    
+    <!-- Usage Example (commented out) -->
+    <!--
+    <script>
+        // Example of how to configure the component after it's loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const viewer = document.querySelector('bbox-viewer-app');
+            if (viewer) {
+                viewer.configure({
+                    basePath: './data/images/',
+                    columnMapping: {
+                        // Custom column mappings if your data uses different field names
+                        left: 'x',           // If your data uses 'x' instead of 'left'
+                        top: 'y',            // If your data uses 'y' instead of 'top'
+                        class: 'category',
+                        probability: 'confidence'
+                    },
+                    classColors: {
+                        // Custom colors for specific classes
+                        'truck': 'rgb(100, 149, 237)',
+                        'traffic_light': 'rgb(255, 215, 0)'
+                    }
+                });
+            }
+        });
+    </script>
+    -->
 </body>
 </html>
