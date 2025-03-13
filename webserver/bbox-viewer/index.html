@@ -607,11 +607,18 @@ For configuration options, see the CONFIGURATION SECTION below.
                     }
 
                     // Check for basepath parameter and update if found
+                    let basepathChanged = false;
                     if (vaData.parameters) {
                         const basepathParam = vaData.parameters.find(p => p.label === "basepath");
                         if (basepathParam && basepathParam.value) {
-                            this.setBasePath(basepathParam.value);
-                            console.log("BboxViewer: Updated base path to", this.basePath);
+                            const newBasePath = basepathParam.value.endsWith('/') ? 
+                                basepathParam.value : basepathParam.value + '/';
+                            
+                            if (this.basePath !== newBasePath) {
+                                this.setBasePath(newBasePath);
+                                console.log("BboxViewer: Updated base path to", this.basePath);
+                                basepathChanged = true;
+                            }
                         }
                     }
 
@@ -712,9 +719,20 @@ For configuration options, see the CONFIGURATION SECTION below.
 
                     console.log(`BboxViewer: Processing ${this.rectangles.length} detections for image: ${imageName}`);
                     
-                    // Load the image - this will trigger onload which updates canvas and draws rectangles
-                    this.loadImage(imageName);
-                    this.updateDebugPanel();
+                    // SPECIAL CASE: Check if this is the same image as currently displayed
+                    const currentImageName = this.getCurrentImageName();
+                    const isSameImage = currentImageName === imageName && !basepathChanged;
+                    
+                    if (isSameImage && this.image.complete && this.image.naturalWidth > 0) {
+                        console.log("BboxViewer: Same image detected, updating bounding boxes without reload");
+                        // Just update the bounding boxes without reloading the image or resetting view
+                        this.drawRectangles();
+                        this.updateDebugPanel();
+                    } else {
+                        // Load the image - this will trigger onload which updates canvas and draws rectangles
+                        this.loadImage(imageName);
+                        this.updateDebugPanel();
+                    }
                 } catch (error) {
                     console.error("BboxViewer: Error processing data:", error);
                     this.showError(
@@ -724,6 +742,18 @@ For configuration options, see the CONFIGURATION SECTION below.
                         true
                     );
                 }
+            }
+
+            /**
+             * Gets the filename of the currently displayed image
+             * @return {string|null} The current image filename or null if no image is displayed
+             */
+            getCurrentImageName() {
+                if (!this.image.src) return null;
+                
+                // Extract the filename from the full path
+                const urlParts = this.image.src.split('/');
+                return urlParts[urlParts.length - 1];
             }
 
             /**
