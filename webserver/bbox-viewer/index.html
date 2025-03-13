@@ -1,4 +1,16 @@
 <!DOCTYPE html>
+<!--
+============================================================================
+BBOX VIEWER COMPONENT
+============================================================================
+
+This file contains a complete standalone web component for visualizing 
+bounding box annotations on images, for SAS Visual Analytics.
+
+
+For configuration options, see the CONFIGURATION SECTION below.
+============================================================================
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -33,44 +45,71 @@
     <!-- <div id="debug-panel"></div> -->
 
     <script>
-        /**
-         * BboxViewerApp - A web component for visualizing bounding box annotations on images
-         * 
-         * This component allows users to:
-         * - View images with bounding box annotations from object detection results
-         * - Zoom and pan to inspect details
-         * - See class labels and confidence scores on hover
-         * - Receive data dynamically from SAS Visual Analytics or other sources
-         * 
-         * The component expects data with normalized bounding box coordinates (0-1 range)
-         * and can be configured via the columnMapping property to adapt to different data formats.
-         * 
-         * Usage Example:
-         * <bbox-viewer-app></bbox-viewer-app>
-         * 
-         * The component will listen for message events with properly formatted data.
-         */
+        /* ====================================================================
+         * CONFIGURATION SECTION - MODIFY THESE VALUES AS NEEDED
+         * ==================================================================== */
+         
+        // Base path for loading images (e.g. './images/', 'https://<your_webserver.com>/path/to/this/index.html/images/')
+        const DEFAULT_BASE_PATH = './images/'; //
+        
+        // Whether user interactions (zoom, pan) are disabled
+        const DEFAULT_DISABLE_INTERACTION = false;
+        
+        // Field name mapping (maps component's expected field names to your data's field names)
+        const DEFAULT_COLUMN_MAPPING = {
+            image: 'image',     // Image filename or path
+            left: 'left',       // Left coordinate (normalized 0-1)
+            top: 'top',         // Top coordinate (normalized 0-1)
+            width: 'width',     // Width (normalized 0-1)
+            height: 'height',   // Height (normalized 0-1)
+            class: 'class',     // Object class/category name
+            probability: 'proba', // Detection confidence (0-1)
+            id: 'id'            // Unique identifier
+        };
+        
+        // Predefined colors for common object classes
+        const DEFAULT_CLASS_COLORS = {
+            'person': 'rgb(31, 119, 180)',  // Blue
+            'car': 'rgb(255, 127, 14)',     // Orange
+            'dog': 'rgb(44, 160, 44)',      // Green
+            'cat': 'rgb(214, 39, 40)',      // Red
+            'bicycle': 'rgb(148, 103, 189)', // Purple
+            'motorcycle': 'rgb(140, 86, 75)', // Brown
+            // Add custom colors for your classes here
+        };
+        
+        // Additional fallback colors used for classes not in the predefined list
+        // If the number of classes in one image is larger than the number of defined colors, two classes will get the same color
+        // To avoid this, add class specific colors above or add more FALLBACK_COLORS below
+        const FALLBACK_COLORS = [
+            'rgb(227, 119, 194)', // Pink
+            'rgb(127, 127, 127)', // Gray
+            'rgb(188, 189, 34)',  // Yellow-green
+            'rgb(23, 190, 207)',  // Cyan
+            'rgb(141, 211, 199)', // Light blue-green
+            'rgb(255, 255, 179)', // Light yellow
+            'rgb(190, 186, 218)', // Light purple
+            'rgb(251, 128, 114)', // Salmon
+            'rgb(128, 177, 211)', // Steel blue
+            'rgb(253, 180, 98)',  // Light orange
+        ];
+        
+        /* ====================================================================
+         * END CONFIGURATION SECTION 
+         * ==================================================================== */
+                
         class BboxViewerApp extends HTMLElement {
             constructor() {
                 super();
                 this.attachShadow({ mode: 'open' });
                 
                 // === Configuration ===
-                // Default settings that can be overridden
-                this.basePath = './images/';
-                this.disableInteraction = false;
-                
-                // Column mapping configuration - defines how incoming data fields map to component expectations
-                this.columnMapping = {
-                    image: 'image',     // Image filename or path
-                    left: 'left',       // Left coordinate (normalized 0-1)
-                    top: 'top',         // Top coordinate (normalized 0-1)
-                    width: 'width',     // Width (normalized 0-1)
-                    height: 'height',   // Height (normalized 0-1)
-                    class: 'class',     // Object class/category name
-                    probability: 'proba', // Detection confidence (0-1)
-                    id: 'id'            // Unique identifier
-                };
+                // Initialize with default settings
+                this.basePath = DEFAULT_BASE_PATH;
+                this.disableInteraction = DEFAULT_DISABLE_INTERACTION;
+                this.columnMapping = { ...DEFAULT_COLUMN_MAPPING };
+                this.predefinedColors = { ...DEFAULT_CLASS_COLORS };
+                this.fallbackColors = [...FALLBACK_COLORS];
                 
                 // === DOM Structure ===
                 // Define the shadow DOM content
@@ -364,22 +403,6 @@
                     </div>
                 `;
 
-                // === DOM Element References ===
-                // Store references to key DOM elements for later manipulation
-                this.zoomLevel = 1;
-                this.image = this.shadowRoot.querySelector('#image');
-                this.canvas = this.shadowRoot.querySelector('#overlay');
-                this.imageContainer = this.shadowRoot.querySelector('#image-container');
-                this.zoomInButton = this.shadowRoot.querySelector('#zoom-in').parentElement;
-                this.zoomOutButton = this.shadowRoot.querySelector('#zoom-out').parentElement;
-                this.zoomSlider = this.shadowRoot.querySelector('#zoom-slider');
-                this.maximizeButton = this.shadowRoot.querySelector('#maximize').parentElement;
-                this.minimizeButton = this.shadowRoot.querySelector('#minimize').parentElement;
-                this.debugPanel = document.querySelector('#debug-panel');
-                this.errorMessage = this.shadowRoot.querySelector('#error-message');
-                this.errorText = this.shadowRoot.querySelector('#error-text');
-                this.errorDetails = this.shadowRoot.querySelector('#error-details');
-
                 // === State Initialization ===
                 // Initialize state variables for tracking position and interactions
                 this.imageX = 0;
@@ -396,37 +419,42 @@
                 // === Color Management ===
                 // Setup color system for visualizing different object classes
                 this.colorCache = new Map();
-                
-                // Predefined colors for common classes
-                this.predefinedColors = {
-                    'person': 'rgb(31, 119, 180)',  // Blue
-                    'car': 'rgb(255, 127, 14)',     // Orange
-                    'dog': 'rgb(44, 160, 44)',      // Green
-                    'cat': 'rgb(214, 39, 40)',      // Red
-                    'bicycle': 'rgb(148, 103, 189)', // Purple
-                    'motorcycle': 'rgb(140, 86, 75)', // Brown
-                };
-                
-                // Additional distinct colors for unknown classes
-                this.fallbackColors = [
-                    'rgb(227, 119, 194)', // Pink
-                    'rgb(127, 127, 127)', // Gray
-                    'rgb(188, 189, 34)',  // Yellow-green
-                    'rgb(23, 190, 207)',  // Cyan
-                    'rgb(141, 211, 199)', // Light blue-green
-                    'rgb(255, 255, 179)', // Light yellow
-                    'rgb(190, 186, 218)', // Light purple
-                    'rgb(251, 128, 114)', // Salmon
-                    'rgb(128, 177, 211)', // Steel blue
-                    'rgb(253, 180, 98)',  // Light orange
-                ];
                 this.nextFallbackColorIndex = 0;
 
                 // Initialize empty rectangles array
                 this.rectangles = [];
 
-                // === Event Binding ===
-                // Bind DOM events to component methods
+                // === Event Setup ===
+                this._initializeEventListeners();
+
+                // === Initialization ===
+                // Complete setup and initial rendering
+                this.updateDebugPanel();
+                this._setupResizeObserver();
+                this._initializeUIEvents();
+                this.updateMappingExplanations();
+                this.updateBasepathDisplay();
+            }
+
+            /**
+             * Initialize all event listeners for the component
+             * @private
+             */
+            _initializeEventListeners() {
+                // Image loading events
+                this.image = this.shadowRoot.querySelector('#image');
+                this.canvas = this.shadowRoot.querySelector('#overlay');
+                this.imageContainer = this.shadowRoot.querySelector('#image-container');
+                this.zoomInButton = this.shadowRoot.querySelector('#zoom-in').parentElement;
+                this.zoomOutButton = this.shadowRoot.querySelector('#zoom-out').parentElement;
+                this.zoomSlider = this.shadowRoot.querySelector('#zoom-slider');
+                this.maximizeButton = this.shadowRoot.querySelector('#maximize').parentElement;
+                this.minimizeButton = this.shadowRoot.querySelector('#minimize').parentElement;
+                this.debugPanel = document.querySelector('#debug-panel');
+                this.errorMessage = this.shadowRoot.querySelector('#error-message');
+                this.errorText = this.shadowRoot.querySelector('#error-text');
+                this.errorDetails = this.shadowRoot.querySelector('#error-details');
+
                 // Image loading events
                 this.image.addEventListener('load', () => {
                     this.originalImageWidth = this.image.naturalWidth;
@@ -450,24 +478,30 @@
                 this.imageContainer.addEventListener('wheel', (e) => this.handleWheel(e));
                 this.canvas.addEventListener('mousemove', (e) => this.handleCanvasHover(e));
 
-                // === External Communication ===
-                // Setup event listener for receiving data from VA
+                // External Communication - Setup event listener for receiving data from VA
                 if (window.addEventListener) {
                     window.addEventListener("message", (event) => this.onMessage(event), false);
                 } else {
                     window.attachEvent("onmessage", (event) => this.onMessage(event));
                 }
+            }
 
-                // === Initialization ===
-                // Complete setup and initial rendering
-                this.updateDebugPanel();
-
-                // Add ResizeObserver to handle window resizing
+            /**
+             * Set up resize observer to handle window resizing
+             * @private
+             */
+            _setupResizeObserver() {
                 this.resizeObserver = new ResizeObserver(() => {
                     this.updateCanvasSize();
                 });
                 this.resizeObserver.observe(this.imageContainer);
+            }
 
+            /**
+             * Initialize UI event handlers
+             * @private
+             */
+            _initializeUIEvents() {
                 // Add click handler for mapping toggle
                 this.shadowRoot.querySelector('.mapping-toggle').addEventListener('click', (e) => {
                     const details = this.shadowRoot.querySelector('.mapping-details');
@@ -480,12 +514,6 @@
                         toggle.textContent = 'Hide expected data format ▲';
                     }
                 });
-
-                // Initialize mapping explanations
-                this.updateMappingExplanations();
-
-                // Update the base path info display
-                this.updateBasepathDisplay();
             }
 
             // === Core Methods ===
@@ -546,102 +574,155 @@
                 
                 const vaData = event.data;
                 
-                // Validate data structure
-                if (!vaData.data || !Array.isArray(vaData.data)) {
-                    this.showError("Invalid data format received", "Data array is missing or not an array", 'error', true);
-                    return;
-                }
+                // DATA VALIDATION
+                // -------------------------------------------------------------------
+                // The component expects data in the following format:
+                // {
+                //   columns: [{ label: 'image' }, { label: 'left' }, ...],
+                //   data: [
+                //     ['image1.jpg', 0.1, 0.2, 0.3, 0.4, 'person', 0.95],
+                //     ['image1.jpg', 0.5, 0.6, 0.2, 0.3, 'car', 0.87]
+                //   ],
+                //   parameters: [{ label: 'basepath', value: './images/' }]
+                // }
                 
-                if (vaData.data.length === 0) {
-                    this.showError("No data received", "The data array is empty", 'error', true);
-                    return;
-                }
-                
-                if (!vaData.columns) {
-                    this.showError("Invalid data format received", "Columns definition is missing", 'error', true);
-                    return;
-                }
-
-                // Check for basepath parameter and update if found
-                if (vaData.parameters) {
-                    const basepathParam = vaData.parameters.find(p => p.label === "basepath");
-                    if (basepathParam && basepathParam.value) {
-                        this.setBasePath(basepathParam.value);
-                    }
-                }
-
-                // Create a map of column labels to indices
-                const columnIndices = {};
-                vaData.columns.forEach((col, index) => {
-                    columnIndices[col.label] = index;
-                });
-
-                // Check for image column
-                const imageIndex = columnIndices[this.columnMapping.image];
-                if (imageIndex === undefined) {
-                    this.showError(
-                        "Image column not found", 
-                        `Column '${this.columnMapping.image}' is missing from data. Available columns: ${vaData.columns.map(c => c.label).join(', ')}`,
-                        'error',
-                        true
-                    );
-                    return;
-                }
-
-                // Validate image data
-                const uniqueImages = new Set(vaData.data.map(row => row[imageIndex]));
-                if (uniqueImages.size === 0) {
-                    this.showError("No image name provided", "The image column contains no values", 'error', true);
-                    return;
-                }
-                
-                if (uniqueImages.size > 1) {
-                    this.showError("Multiple images detected", "Select a single image to view", 'neutral');
-                    return;
-                }
-
-                // Extract the image name from the first row
-                const imageName = vaData.data[0][imageIndex];
-                if (typeof imageName !== 'string' || !imageName) {
-                    this.showError("Invalid image name format", "Image name must be a non-empty string", 'error', true);
-                    return;
-                }
-
-                // Validate required column existence
-                const requiredColumns = ['left', 'top', 'width', 'height'];
-                const missingColumns = requiredColumns
-                    .map(col => this.columnMapping[col])
-                    .filter(mappedCol => columnIndices[mappedCol] === undefined);
-                
-                if (missingColumns.length > 0) {
-                    this.showError(
-                        "Missing required columns",
-                        `The following columns are missing: ${missingColumns.join(', ')}`,
-                        'error',
-                        true
-                    );
-                    return;
-                }
-
                 try {
-                    // Convert VA data to rectangles format using column mapping
-                    this.rectangles = vaData.data.map(row => ({
-                        left: parseFloat(row[columnIndices[this.columnMapping.left]]) || 0,
-                        top: parseFloat(row[columnIndices[this.columnMapping.top]]) || 0,
-                        width: parseFloat(row[columnIndices[this.columnMapping.width]]) || 0,
-                        height: parseFloat(row[columnIndices[this.columnMapping.height]]) || 0,
-                        class: row[columnIndices[this.columnMapping.class]] || 'unknown',
-                        probability: parseFloat(row[columnIndices[this.columnMapping.probability]]) || 1.0,
-                        id: row[columnIndices[this.columnMapping.id]] || `rect-${Math.random().toString(36).substr(2, 9)}`,
-                        hovered: false
-                    }));
+                    // Validate data structure
+                    if (!vaData.data || !Array.isArray(vaData.data)) {
+                        this.showError("Invalid data format received", 
+                            "Data array is missing or not an array", 'error', true);
+                        return;
+                    }
+                    
+                    if (vaData.data.length === 0) {
+                        this.showError("No data received", 
+                            "The data array is empty", 'error', true);
+                        return;
+                    }
+                    
+                    if (!vaData.columns) {
+                        this.showError("Invalid data format received", 
+                            "Columns definition is missing", 'error', true);
+                        return;
+                    }
 
+                    // Check for basepath parameter and update if found
+                    if (vaData.parameters) {
+                        const basepathParam = vaData.parameters.find(p => p.label === "basepath");
+                        if (basepathParam && basepathParam.value) {
+                            this.setBasePath(basepathParam.value);
+                            console.log("BboxViewer: Updated base path to", this.basePath);
+                        }
+                    }
+
+                    // Create a map of column labels to indices for easier data access
+                    const columnIndices = {};
+                    vaData.columns.forEach((col, index) => {
+                        columnIndices[col.label] = index;
+                    });
+
+                    // Check for required columns
+                    const requiredColumnMappings = [
+                        'image',  // Image filename
+                        'left',   // X coordinate (normalized 0-1)
+                        'top',    // Y coordinate (normalized 0-1)
+                        'width',  // Width (normalized 0-1)
+                        'height'  // Height (normalized 0-1)
+                    ];
+                    
+                    // Validate that all required columns exist in the data
+                    const missingColumns = requiredColumnMappings
+                        .map(reqCol => this.columnMapping[reqCol])
+                        .filter(mappedCol => columnIndices[mappedCol] === undefined);
+                    
+                    if (missingColumns.length > 0) {
+                        this.showError(
+                            "Missing required columns",
+                            `The following columns are missing: ${missingColumns.join(', ')}. Available columns: ${vaData.columns.map(c => c.label).join(', ')}`,
+                            'error',
+                            true
+                        );
+                        return;
+                    }
+
+                    // IMAGE VALIDATION
+                    // -------------------------------------------------------------------
+                    // Check that we have a valid image column
+                    const imageIndex = columnIndices[this.columnMapping.image];
+                    if (imageIndex === undefined) {
+                        this.showError(
+                            "Image column not found", 
+                            `Column '${this.columnMapping.image}' is missing from data. Available columns: ${vaData.columns.map(c => c.label).join(', ')}`,
+                            'error',
+                            true
+                        );
+                        return;
+                    }
+
+                    // Validate image data
+                    const uniqueImages = new Set(vaData.data.map(row => row[imageIndex]));
+                    if (uniqueImages.size === 0) {
+                        this.showError("No image name provided", 
+                            "The image column contains no values", 'error', true);
+                        return;
+                    }
+                    
+                    if (uniqueImages.size > 1) {
+                        this.showError("Multiple images detected", 
+                            "Select a single image to view. Found: " + Array.from(uniqueImages).join(', '), 
+                            'neutral');
+                        return;
+                    }
+
+                    // Extract the image name from the first row
+                    const imageName = vaData.data[0][imageIndex];
+                    if (typeof imageName !== 'string' || !imageName) {
+                        this.showError("Invalid image name format", 
+                            "Image name must be a non-empty string", 'error', true);
+                        return;
+                    }
+
+                    // CONVERT DATA TO RECTANGLES
+                    // -------------------------------------------------------------------
+                    // Convert VA data to rectangles format using column mapping
+                    this.rectangles = vaData.data.map(row => {
+                        // Extract data using column mapping
+                        const left = parseFloat(row[columnIndices[this.columnMapping.left]]) || 0;
+                        const top = parseFloat(row[columnIndices[this.columnMapping.top]]) || 0;
+                        const width = parseFloat(row[columnIndices[this.columnMapping.width]]) || 0;
+                        const height = parseFloat(row[columnIndices[this.columnMapping.height]]) || 0;
+                        
+                        // Optional fields with fallbacks
+                        const className = row[columnIndices[this.columnMapping.class]] || 'unknown';
+                        const probability = parseFloat(row[columnIndices[this.columnMapping.probability]]) || 1.0;
+                        
+                        // Create rectangle object
+                        return {
+                            left,
+                            top,
+                            width,
+                            height,
+                            class: className,
+                            probability,
+                            id: row[columnIndices[this.columnMapping.id]] || 
+                                `rect-${Math.random().toString(36).substr(2, 9)}`,
+                            hovered: false
+                        };
+                    });
+
+                    console.log(`BboxViewer: Processing ${this.rectangles.length} detections for image: ${imageName}`);
+                    
                     // Load the image - this will trigger onload which updates canvas and draws rectangles
                     this.loadImage(imageName);
                     this.updateDebugPanel();
                 } catch (error) {
-                    console.error("Error processing data:", error);
-                    this.showError("Error processing data", error.message, 'error', true);
+                    console.error("BboxViewer: Error processing data:", error);
+                    this.showError(
+                        "Error processing data", 
+                        error.message, 
+                        'error', 
+                        true
+                    );
                 }
             }
 
@@ -1199,31 +1280,5 @@
         customElements.define('bbox-viewer-app', BboxViewerApp);
     </script>
     
-    <!-- Usage Example (commented out) -->
-    <!--
-    <script>
-        // Example of how to configure the component after it's loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            const viewer = document.querySelector('bbox-viewer-app');
-            if (viewer) {
-                viewer.configure({
-                    basePath: './data/images/',
-                    columnMapping: {
-                        // Custom column mappings if your data uses different field names
-                        left: 'x',           // If your data uses 'x' instead of 'left'
-                        top: 'y',            // If your data uses 'y' instead of 'top'
-                        class: 'category',
-                        probability: 'confidence'
-                    },
-                    classColors: {
-                        // Custom colors for specific classes
-                        'truck': 'rgb(100, 149, 237)',
-                        'traffic_light': 'rgb(255, 215, 0)'
-                    }
-                });
-            }
-        });
-    </script>
-    -->
 </body>
 </html>
