@@ -358,12 +358,19 @@ For configuration options, see the CONFIGURATION SECTION below.
                 this.image.addEventListener('load', () => {
                     this.errorMessage.style.display = 'none';
                     this.image.style.display = 'block';
-                    this.toolbar.classList.remove('hidden');
-                    this.updateImageTransform(true);
+                    if (!this.disableInteraction) {
+                        this.toolbar.classList.remove('hidden');
+                    }
+                    // Fit image to container
+                    this.fitImageToContainer();
                 });
                 
                 this.image.addEventListener('error', (e) => {
-                    this.showError("Failed to load image", e.target.src, 'error');
+                    this.showError(
+                        "Failed to load image", 
+                        e.target.src, 
+                        'error'
+                    );
                     this.image.style.display = 'none';
                     this.toolbar.classList.add('hidden');
                 });
@@ -389,7 +396,8 @@ For configuration options, see the CONFIGURATION SECTION below.
              */
             _setupResizeObserver() {
                 this.resizeObserver = new ResizeObserver(() => {
-                    this.updateImageTransform(true);
+                    // When container is resized, fit the image to the new container size
+                    this.fitImageToContainer();
                 });
                 this.resizeObserver.observe(this.imageContainer);
             }
@@ -425,8 +433,9 @@ For configuration options, see the CONFIGURATION SECTION below.
              * @param {string} message - The main error message to display
              * @param {string} details - Additional error details (like a file path)
              * @param {string} type - Error type: 'error' or 'neutral' for informational messages
+             * @param {Object} data - Optional data object to display in structured format
              */
-            showError(message, details = '', type = 'error') {
+            showError(message, details = '', type = 'error', data = null) {
                 this.errorMessage.style.display = 'block';
                 this.image.style.display = 'none';
                 this.toolbar.classList.add('hidden');
@@ -435,31 +444,70 @@ For configuration options, see the CONFIGURATION SECTION below.
                 this.errorMessage.classList.remove('error', 'neutral');
                 this.errorMessage.classList.add(type);
                 
-                if (type === 'neutral') {
-                    this.errorMessage.innerHTML = `
-                        <h2>${message}</h2>
-                        ${details ? `<div class="error-path">${details}</div>` : ''}
-                        <div class="mapping-info">
-                            <h4>Expected Data Format</h4>
-                            <div class="mapping-details"></div>
-                            <div class="base-path-info"></div>
-                        </div>
-                    `;
-                } else {
-                    this.errorMessage.innerHTML = `
-                        <h1>${message}</h1>
-                        <div class="error-path">${details}</div>
-                        <div class="mapping-info">
-                            <h4>Expected Data Format</h4>
-                            <div class="mapping-details"></div>
-                            <div class="base-path-info"></div>
+                // Base HTML structure
+                let htmlContent = `
+                    <h2>${message}</h2>
+                    ${details ? `<div class="error-path">${details}</div>` : ''}
+                    <div class="mapping-info">
+                        <h4>Expected Data Format</h4>
+                        <div class="mapping-details"></div>
+                        <div class="base-path-info"></div>
+                    </div>
+                `;
+                
+                // Add data display if provided
+                if (data) {
+                    htmlContent += `
+                        <div class="data-display">
+                            <h4>Received Data</h4>
+                            <div class="data-container">
+                                <pre>${JSON.stringify(data, null, 2)}</pre>
+                            </div>
                         </div>
                     `;
                 }
                 
+                this.errorMessage.innerHTML = htmlContent;
+                
                 // Update the mapping explanations and basepath display
                 this.updateMappingExplanations();
                 this.updateBasepathDisplay();
+                
+                // Add styles for data display if not already present
+                if (!this.dataStylesAdded) {
+                    const styleElement = document.createElement('style');
+                    styleElement.textContent = `
+                        .data-display {
+                            margin-top: 20px;
+                            border-top: 1px solid #ddd;
+                            padding-top: 15px;
+                            text-align: left;
+                        }
+                        .data-display h4 {
+                            color: #888;
+                            font-size: 14px;
+                            margin: 0 0 15px 0;
+                            font-weight: normal;
+                        }
+                        .data-container {
+                            max-height: 300px;
+                            overflow-y: auto;
+                            background: #f8f8f8;
+                            border: 1px solid #ddd;
+                            border-radius: 4px;
+                            padding: 10px;
+                        }
+                        .data-container pre {
+                            margin: 0;
+                            white-space: pre-wrap;
+                            font-family: monospace;
+                            font-size: 12px;
+                            color: #333;
+                        }
+                    `;
+                    this.shadowRoot.appendChild(styleElement);
+                    this.dataStylesAdded = true;
+                }
             }
 
             /**
@@ -469,7 +517,7 @@ For configuration options, see the CONFIGURATION SECTION below.
             onMessage(event) {
                 if (!event || !event.data) {
                     console.error("ImageViewer: Received empty or invalid message event");
-                    this.showError("Received empty or invalid message");
+                    this.showError("Received empty or invalid message", "", 'error');
                     return;
                 }
                 
@@ -493,24 +541,35 @@ For configuration options, see the CONFIGURATION SECTION below.
                     const vaData = event.data.data;
                     
                     if (!vaData || !Array.isArray(vaData) || vaData.length === 0) {
-                        this.showError("Invalid data format received", "Data array is missing or empty", 'error');
+                        this.showError(
+                            "Invalid data format received", 
+                            "Data array is missing or empty", 
+                            'error',
+                            event.data
+                        );
                         return;
                     }
 
                     // Check if we have more than one row or column
                     if (vaData.length > 1 || (vaData[0] && vaData[0].length > 1)) {
-                        this.showError("Please select a single image to view", 
+                        this.showError(
+                            "Select a single image to view", 
                             "Multiple values were provided. Select a single cell containing the image path.", 
-                            'neutral');
+                            'neutral',
+                            event.data
+                        );
                         return;
                     }
 
                     // Extract the image name from the first cell
                     const imageName = vaData[0][0];
                     if (typeof imageName !== 'string' || !imageName) {
-                        this.showError("Invalid image name format", 
+                        this.showError(
+                            "Invalid image name format", 
                             "Image name must be a non-empty string. Received: " + JSON.stringify(vaData[0][0]), 
-                            'error');
+                            'error',
+                            event.data
+                        );
                         return;
                     }
 
@@ -529,7 +588,8 @@ For configuration options, see the CONFIGURATION SECTION below.
                     this.showError(
                         "Error processing data", 
                         error.message, 
-                        'error'
+                        'error',
+                        event.data
                     );
                 }
             }
@@ -571,11 +631,13 @@ For configuration options, see the CONFIGURATION SECTION below.
                     
                     // Show image and toolbar on successful load
                     this.image.style.display = 'block';
-                    this.toolbar.classList.remove('hidden');
+                    if (!this.disableInteraction) {
+                        this.toolbar.classList.remove('hidden');
+                    }
                     
-                    // Update the view
+                    // Update the view and fit image to container
                     requestAnimationFrame(() => {
-                        this.updateImageTransform(true);
+                        this.fitImageToContainer();
                         this.updateZoomSlider();
                     });
                 };
@@ -583,10 +645,12 @@ For configuration options, see the CONFIGURATION SECTION below.
                 // Add error handler for this specific load attempt
                 this.image.onerror = (e) => {
                     // Show error message with failed image info
-                    this.showError("Failed to load image", 
+                    this.showError(
+                        "Failed to load image", 
                         `The image could not be loaded: ${e.target.src}
                         Check that the file exists and the base path is correct.`,
-                        'error');
+                        'error'
+                    );
                     
                     // Hide toolbar
                     this.toolbar.classList.add('hidden');
@@ -659,10 +723,10 @@ For configuration options, see the CONFIGURATION SECTION below.
             }
 
             /**
-             * Fits the image to the container while maintaining aspect ratio
+             * Scales the image to fit the container while maintaining aspect ratio
+             * This can be used regardless of whether interaction is enabled or disabled
              */
-            maximize() {
-                if (this.disableInteraction) return;
+            fitImageToContainer() {
                 const containerWidth = this.shadowRoot.querySelector('#image-container').clientWidth;
                 const containerHeight = this.shadowRoot.querySelector('#image-container').clientHeight;
                 const rect = this.image.getBoundingClientRect();
@@ -683,15 +747,43 @@ For configuration options, see the CONFIGURATION SECTION below.
             }
 
             /**
-             * Resets zoom and position to default values
+             * Scales the image to fill the container (may crop parts of the image)
+             * This can be used regardless of whether interaction is enabled or disabled
              */
-            minimize() {
-                if (this.disableInteraction) return;
-                this.zoomLevel = 1;
+            fillImageToContainer() {
+                const containerWidth = this.shadowRoot.querySelector('#image-container').clientWidth;
+                const containerHeight = this.shadowRoot.querySelector('#image-container').clientHeight;
+                const rect = this.image.getBoundingClientRect();
+                const imageWidth = rect.width / this.zoomLevel;
+                const imageHeight = rect.height / this.zoomLevel;
+
+                if (imageWidth === 0 || imageHeight === 0) return; // Image not loaded yet
+
+                const widthScale = containerWidth / imageWidth;
+                const heightScale = containerHeight / imageHeight;
+
+                // Use the larger scale to ensure the image fills the container
+                this.zoomLevel = Math.max(widthScale, heightScale);
                 this.imageX = 0;
                 this.imageY = 0;
                 this.updateZoomSlider();
                 this.updateImageTransform(true);
+            }
+
+            /**
+             * Fills the container with the image (may crop parts of the image)
+             */
+            maximize() {
+                if (this.disableInteraction) return;
+                this.fillImageToContainer();
+            }
+
+            /**
+             * Resets zoom and position to fit the image in the container
+             */
+            minimize() {
+                if (this.disableInteraction) return;
+                this.fitImageToContainer();
             }
 
             /**
