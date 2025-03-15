@@ -191,8 +191,19 @@ For configuration options, see the CONFIGURATION SECTION below.
                             text-align: center;
                             z-index: 3;
                             font-family: Arial, sans-serif;
-                            min-width: 400px;
+                            min-width: 500px;
+                            width: 80%;
+                            max-width: 800px;
                             padding: 20px;
+                            box-sizing: border-box;
+                        }
+
+                        @media (max-width: 600px) {
+                            #error-message {
+                                min-width: 90%;
+                                width: 90%;
+                                padding: 15px;
+                            }
                         }
 
                         #error-message.error,
