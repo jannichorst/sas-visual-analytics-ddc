@@ -1010,27 +1010,41 @@ For configuration options, see the CONFIGURATION SECTION below.
                     
                     // For categorical fields: either type is string or usage is categorical
                     if (expected.usage === 'categorical') {
-                        // Skip validation if type or usage is not defined
-                        if (!column.type && !column.usage) return;
-                        
-                        const isValidType = column.type === 'string';
-                        const isValidUsage = column.usage === 'categorical';
-                        
-                        if (!isValidType && !isValidUsage) {
-                            errors.push(`Column '${mappedLabel}' should be of type 'string' or have usage 'categorical', but has type '${column.type || 'unknown'}' and usage '${column.usage || 'unknown'}'.`);
+                        // Always validate categorical fields if column metadata exists
+                        if (column) {
+                            const isValidType = column.type === 'string';
+                            const isValidUsage = column.usage === 'categorical';
+                            
+                            // Special check for id column - this is important for proper validation
+                            if (key === 'id' && column.type === 'number') {
+                                errors.push(`Column '${mappedLabel}' (id) should be of type 'string' or have usage 'categorical', but has type 'number'. This may cause issues with bounding box identification.`);
+                            }
+                            // General check for all categorical fields
+                            else if (!isValidType && !isValidUsage) {
+                                errors.push(`Column '${mappedLabel}' should be of type 'string' or have usage 'categorical', but has type '${column.type || 'unknown'}' and usage '${column.usage || 'unknown'}'.`);
+                            }
                         }
                     }
                     
                     // For measure fields: usage must be quantitative
                     if (expected.usage === 'quantitative') {
-                        // Skip validation if usage is not defined
-                        if (!column.usage) return;
-                        
-                        if (column.usage !== 'quantitative') {
-                            errors.push(`Column '${mappedLabel}' should have usage 'quantitative', but has usage '${column.usage || 'unknown'}'.`);
+                        // Only validate if usage is defined
+                        if (column.usage) {
+                            if (column.usage !== 'quantitative') {
+                                errors.push(`Column '${mappedLabel}' should have usage 'quantitative', but has usage '${column.usage || 'unknown'}'.`);
+                            }
                         }
                     }
                 });
+                
+                // Add debug logging to help troubleshoot
+                if (this.verboseLogging) {
+                    console.log("BboxViewer: Column validation results:", {
+                        columns,
+                        columnIndices,
+                        errors
+                    });
+                }
                 
                 return errors;
             }
@@ -1049,6 +1063,44 @@ For configuration options, see the CONFIGURATION SECTION below.
                 if (this.image.complete && this.image.naturalWidth > 0) {
                     this.image.style.display = 'block';
                     this.shadowRoot.querySelector('#toolbar').classList.remove('hidden');
+                }
+                
+                // Add a debug button to the error message
+                const errorMessage = this.shadowRoot.querySelector('#error-message');
+                if (errorMessage) {
+                    const debugButton = document.createElement('button');
+                    debugButton.textContent = 'Enable Debug Mode';
+                    debugButton.style.cssText = `
+                        background: #f0f0f0;
+                        border: 1px solid #ccc;
+                        border-radius: 4px;
+                        padding: 5px 10px;
+                        cursor: pointer;
+                        font-size: 12px;
+                        margin-top: 10px;
+                        margin-right: 10px;
+                    `;
+                    debugButton.addEventListener('click', () => {
+                        this.setVerboseLogging(true);
+                        // Re-validate to show detailed logs
+                        if (data && data.columns) {
+                            const columnIndices = {};
+                            data.columns.forEach((col, index) => {
+                                columnIndices[col.label] = index;
+                            });
+                            this.validateColumnTypes(data.columns, columnIndices);
+                        }
+                        debugButton.textContent = 'Debug Mode Enabled';
+                        debugButton.disabled = true;
+                    });
+                    
+                    // Add the button after any existing buttons
+                    const firstButton = errorMessage.querySelector('button');
+                    if (firstButton) {
+                        firstButton.parentNode.insertBefore(debugButton, firstButton.nextSibling);
+                    } else {
+                        errorMessage.appendChild(debugButton);
+                    }
                 }
             }
 
@@ -1597,6 +1649,7 @@ For configuration options, see the CONFIGURATION SECTION below.
              * @param {Object} config.columnMapping - Custom column mapping
              * @param {Object} config.classColors - Custom colors for specific classes
              * @param {boolean} config.enableTypeChecking - Enable or disable type validation
+             * @param {boolean} config.verboseLogging - Enable or disable verbose console logging
              * @return {BboxViewerApp} The component instance for chaining
              */
             configure(config = {}) {
@@ -1640,6 +1693,21 @@ For configuration options, see the CONFIGURATION SECTION below.
                     this.enableTypeChecking = config.enableTypeChecking;
                 }
                 
+                if (config.verboseLogging !== undefined) {
+                    this.setVerboseLogging(config.verboseLogging);
+                }
+                
+                return this;
+            }
+            
+            /**
+             * Enables or disables verbose logging
+             * @param {boolean} enabled - Whether to enable verbose logging
+             * @return {BboxViewerApp} The component instance for chaining
+             */
+            setVerboseLogging(enabled) {
+                this.verboseLogging = enabled;
+                console.log(`BboxViewer: Verbose logging ${enabled ? 'enabled' : 'disabled'}`);
                 return this;
             }
             
