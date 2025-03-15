@@ -124,6 +124,12 @@ For configuration options, see the CONFIGURATION SECTION below.
                 this.predefinedColors = { ...DEFAULT_CLASS_COLORS };
                 this.fallbackColors = [...FALLBACK_COLORS];
                 
+                // Debug mode flag - set to true to enable debug panel
+                this.debugMode = false;
+                
+                // Verbose logging flag - set to true for detailed console logs
+                this.verboseLogging = false;
+                
                 // === DOM Structure ===
                 // Define the shadow DOM content
                 this.shadowRoot.innerHTML = `
@@ -535,14 +541,6 @@ For configuration options, see the CONFIGURATION SECTION below.
                 this.errorText = this.shadowRoot.querySelector('#error-text');
                 this.errorDetails = this.shadowRoot.querySelector('#error-details');
 
-                // Add wheel event handler for error message to enable trackpad scrolling
-                this.errorMessage.addEventListener('wheel', (e) => {
-                    // Only stop propagation if the error message is scrollable
-                    if (this.errorMessage.scrollHeight > this.errorMessage.clientHeight) {
-                        e.stopPropagation();
-                    }
-                });
-
                 // Image loading events
                 this.image.addEventListener('load', () => {
                     this.originalImageWidth = this.image.naturalWidth;
@@ -741,8 +739,24 @@ For configuration options, see the CONFIGURATION SECTION below.
             }
 
             /**
-             * Handles incoming data from VA and processes it for display
+             * Handles incoming data from SAS Visual Analytics and processes it for display
              * @param {MessageEvent} event - The message event containing VA data
+             * 
+             * @description
+             * The component expects data in the following format:
+             * ```
+             * {
+             *   columns: [{ label: 'image' }, { label: 'left' }, ...],
+             *   data: [
+             *     ['image1.jpg', 0.1, 0.2, 0.3, 0.4, 'person', 0.95],
+             *     ['image1.jpg', 0.5, 0.6, 0.2, 0.3, 'car', 0.87]
+             *   ],
+             *   parameters: [{ label: 'basepath', value: './images/' }]
+             * }
+             * ```
+             * 
+             * The method performs validation on the received data, extracts bounding box
+             * information, and updates the display accordingly.
              */
             onMessage(event) {
                 if (!event || !event.data) {
@@ -751,18 +765,6 @@ For configuration options, see the CONFIGURATION SECTION below.
                 }
                 
                 const vaData = event.data;
-                
-                // DATA VALIDATION
-                // -------------------------------------------------------------------
-                // The component expects data in the following format:
-                // {
-                //   columns: [{ label: 'image' }, { label: 'left' }, ...],
-                //   data: [
-                //     ['image1.jpg', 0.1, 0.2, 0.3, 0.4, 'person', 0.95],
-                //     ['image1.jpg', 0.5, 0.6, 0.2, 0.3, 'car', 0.87]
-                //   ],
-                //   parameters: [{ label: 'basepath', value: './images/' }]
-                // }
                 
                 try {
                     // Validate data structure
@@ -794,7 +796,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                             
                             if (this.basePath !== newBasePath) {
                                 this.setBasePath(newBasePath);
-                                console.log("BboxViewer: Updated base path to", this.basePath);
+                                this._log("Updated base path to", this.basePath);
                                 basepathChanged = true;
                             }
                         }
@@ -903,14 +905,14 @@ For configuration options, see the CONFIGURATION SECTION below.
                         };
                     });
 
-                    console.log(`BboxViewer: Processing ${this.rectangles.length} detections for image: ${imageName}`);
+                    this._log(`Processing ${this.rectangles.length} detections for image: ${imageName}`);
                     
                     // SPECIAL CASE: Check if this is the same image as currently displayed
                     const currentImageName = this.getCurrentImageName();
                     const isSameImage = currentImageName === imageName && !basepathChanged;
                     
                     if (isSameImage && this.image.complete && this.image.naturalWidth > 0) {
-                        console.log("BboxViewer: Same image detected, updating bounding boxes without reload");
+                        this._log("Same image detected, updating bounding boxes without reload");
                         // Just update the bounding boxes without reloading the image or resetting view
                         this.drawRectangles();
                         this.updateDebugPanel();
@@ -949,7 +951,7 @@ For configuration options, see the CONFIGURATION SECTION below.
              */
             loadImage(imageName) {
                 const fullPath = this.basePath + imageName;
-                console.log('Starting to load new image:', fullPath);
+                this._log('Starting to load new image:', fullPath);
                 
                 // Clear canvas while loading
                 this.canvas.getContext('2d').clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -963,7 +965,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                 
                 // Add load event listener before setting src
                 this.image.onload = () => {
-                    console.log('Image loaded:', fullPath);
+                    this._log('Image loaded:', fullPath);
                     
                     // Hide error message if it was showing
                     this.errorMessage.style.display = 'none';
@@ -1012,6 +1014,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                     const currentImage = this.image.src.split('/').pop();
                     this.loadImage(currentImage);
                 }
+                this._log('Base path updated', this.basePath);
             }
 
             /**
@@ -1029,21 +1032,22 @@ For configuration options, see the CONFIGURATION SECTION below.
              * This is mainly used during development
              */
             updateDebugPanel() {
-                if (this.debugPanel) {
-                    const debugInfo = `
-                        <div>Zoom Level: ${this.zoomLevel}</div>
-                        <div>Image X: ${this.imageX}</div>
-                        <div>Image Y: ${this.imageY}</div>
-                        <div>Image Width: ${this.image.clientWidth}</div>
-                        <div>Image Height: ${this.image.clientHeight}</div>
-                        <div>Canvas Width: ${this.canvas.width}</div>
-                        <div>Canvas Height: ${this.canvas.height}</div>
-                        ${this.rectangles.map((rect, index) => `
-                            <div>Rectangle ${index + 1} - X: ${rect.left}, Y: ${rect.top}, Width: ${rect.width}, Height: ${rect.height}, Hovered: ${rect.hovered}, Class: ${rect.class}, Probability: ${(rect.probability * 100).toFixed(1)}%</div>
-                        `).join('')}
-                    `;
-                    this.debugPanel.innerHTML = debugInfo;
-                }
+                // Only update if debug mode is enabled and panel exists
+                if (!this.debugMode || !this.debugPanel) return;
+                
+                const debugInfo = `
+                    <div>Zoom Level: ${this.zoomLevel}</div>
+                    <div>Image X: ${this.imageX}</div>
+                    <div>Image Y: ${this.imageY}</div>
+                    <div>Image Width: ${this.image.clientWidth}</div>
+                    <div>Image Height: ${this.image.clientHeight}</div>
+                    <div>Canvas Width: ${this.canvas.width}</div>
+                    <div>Canvas Height: ${this.canvas.height}</div>
+                    ${this.rectangles.map((rect, index) => `
+                        <div>Rectangle ${index + 1} - X: ${rect.left}, Y: ${rect.top}, Width: ${rect.width}, Height: ${rect.height}, Hovered: ${rect.hovered}, Class: ${rect.class}, Probability: ${(rect.probability * 100).toFixed(1)}%</div>
+                    `).join('')}
+                `;
+                this.debugPanel.innerHTML = debugInfo;
             }
 
             /**
@@ -1081,7 +1085,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                 const baseWidth = this.image.naturalWidth * scale;
                 const baseHeight = this.image.naturalHeight * scale;
                 
-                console.log('updateCanvasSize - Input values:', {
+                this._log('updateCanvasSize - Input values:', {
                     containerDimensions: {
                         width: containerRect.width,
                         height: containerRect.height
@@ -1107,7 +1111,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                 this.image.style.width = `${baseWidth}px`;
                 this.image.style.height = `${baseHeight}px`;
                 
-                console.log('updateCanvasSize - Calculated values:', {
+                this._log('updateCanvasSize - Calculated values:', {
                     baseWidth,
                     baseHeight,
                     canvasWidth: this.canvas.width,
@@ -1268,7 +1272,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                 this.updateDebugPanel();
                 
                 // Adding hover-specific details to the debug panel
-                if (this.debugPanel) {
+                if (this.debugMode && this.debugPanel) {
                     const hoverInfo = `
                         <div>Relative Hover X: ${relativeX.toFixed(3)}</div>
                         <div>Relative Hover Y: ${relativeY.toFixed(3)}</div>
@@ -1292,7 +1296,9 @@ For configuration options, see the CONFIGURATION SECTION below.
                 this.updateDebugPanel();
             }
 
-            // Decreases zoom level by a fixed increment
+            /**
+             * Decreases zoom level by a fixed increment
+             */
             zoomOut() {
                 if (this.disableInteraction) return;
                 this.zoomLevel = Math.max(0.2, this.zoomLevel - 0.15);
@@ -1301,7 +1307,9 @@ For configuration options, see the CONFIGURATION SECTION below.
                 this.updateDebugPanel();
             }
 
-            // Updates zoom level based on slider value
+            /**
+             * Updates zoom level based on slider value
+             */
             sliderZoom() {
                 if (this.disableInteraction) return;
                 this.zoomLevel = this.zoomSlider.value / 100;
@@ -1309,7 +1317,9 @@ For configuration options, see the CONFIGURATION SECTION below.
                 this.updateDebugPanel();
             }
 
-            // Fits the image to the container while maintaining aspect ratio
+            /**
+             * Fits the image to the container while maintaining aspect ratio
+             */
             maximize() {
                 if (this.disableInteraction) return;
                 const containerWidth = this.shadowRoot.querySelector('#image-container').clientWidth;
@@ -1326,7 +1336,9 @@ For configuration options, see the CONFIGURATION SECTION below.
                 this.updateDebugPanel();
             }
 
-            // Resets zoom and position to default values
+            /**
+             * Resets zoom and position to default values
+             */
             minimize() {
                 if (this.disableInteraction) return;
                 this.zoomLevel = 1;
@@ -1337,7 +1349,10 @@ For configuration options, see the CONFIGURATION SECTION below.
                 this.updateDebugPanel();
             }
 
-            // Initiates image dragging operation
+            /**
+             * Initiates image dragging operation
+             * @param {MouseEvent} event - The mouse down event
+             */
             startDrag(event) {
                 if (this.disableInteraction) return;
                 this.isDragging = true;
@@ -1349,7 +1364,10 @@ For configuration options, see the CONFIGURATION SECTION below.
                 this.updateDebugPanel();
             }
 
-            // Updates image position during drag operation
+            /**
+             * Updates image position during drag operation
+             * @param {MouseEvent} event - The mouse move event
+             */
             drag(event) {
                 if (!this.isDragging) return;
 
@@ -1359,7 +1377,9 @@ For configuration options, see the CONFIGURATION SECTION below.
                 this.updateDebugPanel();
             }
 
-            // Completes drag operation and restores smooth transitions
+            /**
+             * Completes drag operation and restores smooth transitions
+             */
             endDrag() {
                 this.isDragging = false;
                 this.image.classList.add('smooth');
@@ -1367,12 +1387,17 @@ For configuration options, see the CONFIGURATION SECTION below.
                 this.updateDebugPanel();
             }
 
-            // Synchronizes zoom slider UI with current zoom level
+            /**
+             * Synchronizes zoom slider UI with current zoom level
+             */
             updateZoomSlider() {
                 this.zoomSlider.value = this.zoomLevel * 100;
             }
 
-            // Updates image and canvas transform properties for zoom and pan
+            /**
+             * Updates image and canvas transform properties for zoom and pan
+             * @param {boolean} smooth - Whether to apply smooth transition
+             */
             updateImageTransform(smooth) {
                 const transformValue = `translate(-50%, -50%) scale(${this.zoomLevel}) translate(${this.imageX / this.zoomLevel}px, ${this.imageY / this.zoomLevel}px)`;
                 if (smooth) {
@@ -1389,7 +1414,10 @@ For configuration options, see the CONFIGURATION SECTION below.
                 this.updateDebugPanel();
             }
 
-            // Enables or disables user interaction with the viewer
+            /**
+             * Enables or disables user interaction with the viewer
+             * @param {boolean} disabled - Whether to disable user interaction
+             */
             setDisableInteraction(disabled) {
                 this.disableInteraction = disabled;
                 const toolbar = this.shadowRoot.querySelector('#toolbar');
@@ -1475,6 +1503,7 @@ For configuration options, see the CONFIGURATION SECTION below.
              * @param {boolean} config.disableInteraction - Whether to disable user interaction
              * @param {Object} config.columnMapping - Custom column mapping
              * @param {Object} config.classColors - Custom colors for specific classes
+             * @param {boolean} config.debugMode - Enable debug panel and verbose logging
              * @return {BboxViewerApp} The component instance for chaining
              */
             configure(config = {}) {
@@ -1514,6 +1543,10 @@ For configuration options, see the CONFIGURATION SECTION below.
                     }
                 }
                 
+                if (config.debugMode !== undefined) {
+                    this.setDebugMode(config.debugMode);
+                }
+                
                 return this;
             }
             
@@ -1528,6 +1561,63 @@ For configuration options, see the CONFIGURATION SECTION below.
              */
             reportError(message, details = '', isDataFormatError = false, data = null) {
                 this.showError(message, details, 'error', isDataFormatError, data);
+                return this;
+            }
+
+            /**
+             * Utility method for consistent logging
+             * @param {string} message - The message to log
+             * @param {*} [data] - Optional data to log
+             * @private
+             */
+            _log(message, data) {
+                if (!this.verboseLogging) return;
+                
+                if (data !== undefined) {
+                    console.log(`BboxViewer: ${message}`, data);
+                } else {
+                    console.log(`BboxViewer: ${message}`);
+                }
+            }
+
+            /**
+             * Enables or disables debug mode
+             * @param {boolean} enabled - Whether to enable debug mode
+             * @return {BboxViewerApp} The component instance for chaining
+             */
+            setDebugMode(enabled) {
+                this.debugMode = enabled;
+                this.verboseLogging = enabled;
+                
+                // Create debug panel if it doesn't exist
+                if (enabled && !this.debugPanel) {
+                    this.debugPanel = document.createElement('div');
+                    this.debugPanel.id = 'debug-panel';
+                    this.debugPanel.style.cssText = `
+                        position: fixed;
+                        bottom: 10px;
+                        right: 10px;
+                        width: 300px;
+                        max-height: 300px;
+                        overflow-y: auto;
+                        background: rgba(0, 0, 0, 0.7);
+                        color: white;
+                        font-family: monospace;
+                        font-size: 12px;
+                        padding: 10px;
+                        border-radius: 5px;
+                        z-index: 9999;
+                    `;
+                    document.body.appendChild(this.debugPanel);
+                    this._log('Debug mode enabled');
+                    this.updateDebugPanel();
+                } else if (!enabled && this.debugPanel) {
+                    // Remove debug panel if it exists
+                    this.debugPanel.remove();
+                    this.debugPanel = null;
+                    this._log('Debug mode disabled');
+                }
+                
                 return this;
             }
         }
