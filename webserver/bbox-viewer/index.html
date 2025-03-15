@@ -368,6 +368,19 @@ For configuration options, see the CONFIGURATION SECTION below.
                             padding-left: 12px;
                         }
 
+                        /* Ensure all header cells have the same alignment as their column values */
+                        .mapping-row.mapping-header .mapping-description {
+                            padding-left: 12px;
+                        }
+                        
+                        /* Ensure all header cells have the same font weight */
+                        .mapping-row.mapping-header .mapping-label,
+                        .mapping-row.mapping-header .mapping-type,
+                        .mapping-row.mapping-header .mapping-required,
+                        .mapping-row.mapping-header .mapping-description {
+                            font-weight: 600;
+                        }
+
                         /* Control styles */
                         .view-control {
                             display: flex;
@@ -819,12 +832,9 @@ For configuration options, see the CONFIGURATION SECTION below.
                     }
                     
                     if (uniqueImages.size > 1) {
-                        // Format the image list in a more user-friendly way
-                        const imageCount = uniqueImages.size;
-                        const details = `${imageCount} images found. Please select a single image.`;
-                        
+                        // Don't show details about number of images found
                         this.showError("Select a single image to view", 
-                            details, 
+                            "", 
                             'neutral',
                             false,
                             vaData);
