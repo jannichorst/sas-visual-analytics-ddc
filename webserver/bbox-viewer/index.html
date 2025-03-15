@@ -63,18 +63,18 @@ For configuration options, see the CONFIGURATION SECTION below.
             width: 'width',     // Width (normalized 0-1)
             height: 'height',   // Height (normalized 0-1)
             class: 'class',     // Object class/category name
-            probability: 'proba', // Detection confidence (0-1)
+            probability: 'probability', // Detection confidence (0-1)
             id: 'id'            // Unique identifier
         };
         
         // Predefined colors for common object classes
         const DEFAULT_CLASS_COLORS = {
-            'person': 'rgb(31, 119, 180)',  // Blue
-            'car': 'rgb(255, 127, 14)',     // Orange
-            'dog': 'rgb(44, 160, 44)',      // Green
-            'cat': 'rgb(214, 39, 40)',      // Red
-            'bicycle': 'rgb(148, 103, 189)', // Purple
-            'motorcycle': 'rgb(140, 86, 75)', // Brown
+            'person': 'rgb(0, 114, 178)',    // Vivid blue
+            'car': 'rgb(230, 97, 0)',        // Vivid orange
+            'dog': 'rgb(0, 158, 115)',       // Vivid green
+            'cat': 'rgb(213, 38, 0)',        // Vivid red
+            'bicycle': 'rgb(116, 0, 184)',   // Vivid purple
+            'motorcycle': 'rgb(162, 20, 47)', // Vivid burgundy
             // Add custom colors for your classes here
         };
         
@@ -82,16 +82,29 @@ For configuration options, see the CONFIGURATION SECTION below.
         // If the number of classes in one image is larger than the number of defined colors, two classes will get the same color
         // To avoid this, add class specific colors above or add more FALLBACK_COLORS below
         const FALLBACK_COLORS = [
-            'rgb(227, 119, 194)', // Pink
-            'rgb(127, 127, 127)', // Gray
-            'rgb(188, 189, 34)',  // Yellow-green
-            'rgb(23, 190, 207)',  // Cyan
-            'rgb(141, 211, 199)', // Light blue-green
-            'rgb(255, 255, 179)', // Light yellow
-            'rgb(190, 186, 218)', // Light purple
-            'rgb(251, 128, 114)', // Salmon
-            'rgb(128, 177, 211)', // Steel blue
-            'rgb(253, 180, 98)',  // Light orange
+            'rgb(240, 50, 230)',    // Magenta
+            'rgb(70, 70, 70)',      // Dark gray
+            'rgb(153, 153, 0)',     // Olive
+            'rgb(0, 153, 204)',     // Azure
+            'rgb(0, 204, 102)',     // Emerald
+            'rgb(204, 0, 102)',     // Crimson
+            'rgb(102, 0, 204)',     // Indigo
+            'rgb(204, 102, 0)',     // Amber
+            'rgb(0, 102, 102)',     // Teal
+            'rgb(204, 0, 0)',       // Bright red
+            'rgb(0, 0, 204)',       // Bright blue
+            'rgb(153, 0, 76)',      // Deep pink
+            'rgb(0, 102, 0)',       // Forest green
+            'rgb(76, 0, 153)',      // Deep purple
+            'rgb(153, 76, 0)',      // Burnt orange
+            'rgb(0, 76, 153)',      // Navy blue
+            'rgb(153, 0, 0)',       // Maroon
+            'rgb(0, 153, 76)',      // Jade
+            'rgb(102, 51, 0)',      // Brown
+            'rgb(76, 153, 0)',      // Lime green
+            'rgb(204, 51, 153)',    // Raspberry
+            'rgb(51, 102, 153)',    // Steel blue
+            'rgb(153, 102, 51)',    // Bronze
         ];
         
         /* ====================================================================
@@ -296,11 +309,36 @@ For configuration options, see the CONFIGURATION SECTION below.
                         .mapping-row {
                             display: table-row;
                         }
+                        
+                        .mapping-row:not(.mapping-header) {
+                            border-bottom: 1px solid #eee;
+                        }
+                        
+                        .mapping-row:not(.mapping-header):hover {
+                            background-color: #f9f9f9;
+                        }
+                        
+                        .mapping-row.mapping-header {
+                            font-weight: 600;
+                            border-bottom: 1px solid #999;
+                            background-color: #f5f5f5;
+                        }
+                        
+                        .mapping-row.mapping-header .mapping-label,
+                        .mapping-row.mapping-header .mapping-type,
+                        .mapping-row.mapping-header .mapping-required,
+                        .mapping-row.mapping-header .mapping-description {
+                            padding: 8px 4px;
+                            color: #444;
+                            font-size: 13px;
+                        }
 
                         .mapping-label,
+                        .mapping-type,
+                        .mapping-required,
                         .mapping-description {
                             display: table-cell;
-                            padding: 4px 0;
+                            padding: 6px 4px;
                             color: #888;
                             font-size: 12px;
                         }
@@ -309,6 +347,14 @@ For configuration options, see the CONFIGURATION SECTION below.
                             font-weight: 500;
                             width: 60px;
                             white-space: nowrap;
+                        }
+                        
+                        .mapping-type,
+                        .mapping-required {
+                            font-weight: 400;
+                            width: 80px;
+                            white-space: nowrap;
+                            text-align: center;
                         }
 
                         .mapping-description {
@@ -524,40 +570,129 @@ For configuration options, see the CONFIGURATION SECTION below.
              * @param {string} details - Additional error details (like a file path)
              * @param {string} type - Error type: 'error' or 'neutral' for informational messages
              * @param {boolean} isDataFormatError - Whether this is a data format error (should show expected variables)
+             * @param {Object} data - Optional data object to display in structured format
              */
-            showError(message, details = '', type = 'error', isDataFormatError = false) {
+            showError(message, details = '', type = 'error', isDataFormatError = false, data = null) {
                 this.errorMessage.style.display = 'block';
                 this.image.style.display = 'none';
+                this.shadowRoot.querySelector('#toolbar').classList.add('hidden');
                 
                 // Reset classes and apply the appropriate one
                 this.errorMessage.classList.remove('error', 'neutral');
                 this.errorMessage.classList.add(type);
                 
+                // Base HTML structure
+                let htmlContent = `
+                    <div>
+                        ${type === 'error' ? `<h1>${message}</h1>` : `<h2>${message}</h2>`}
+                        ${details ? `<div class="error-path">${details}</div>` : ''}
+                    </div>
+                `;
+                
+                // Add mapping info for data format errors
                 if (type === 'neutral' || isDataFormatError) {
-                    // For neutral messages or data format errors, show mapping info
-                    this.errorMessage.innerHTML = `
-                        <div>
-                            ${type === 'error' ? `<h1>${message}</h1>` : `<h2>${message}</h2>`}
-                            ${details ? `<div class="error-path">${details}</div>` : ''}
-                        </div>
+                    htmlContent += `
                         <div id="mapping-info" class="mapping-info">
                             <h4>Expected Variables</h4>
                             <div class="mapping-details"></div>
                             <div class="base-path-info"></div>
                         </div>
                     `;
-                    
-                    // Update the mapping explanations and basepath display
-                    this.updateMappingExplanations();
-                    this.updateBasepathDisplay();
-                } else {
-                    // For other error types (like file loading errors), use the original approach
-                    this.errorMessage.innerHTML = `
-                        <h1>${message}</h1>
-                        <div class="error-path">${details}</div>
+                }
+                
+                // Add data display if provided
+                if (data) {
+                    htmlContent += `
+                        <div class="data-display">
+                            <button class="data-toggle" aria-expanded="false">Show Received Data ▼</button>
+                            <div class="data-container collapsed">
+                                <pre>${JSON.stringify(data, null, 2)}</pre>
+                            </div>
+                        </div>
                     `;
                 }
                 
+                this.errorMessage.innerHTML = htmlContent;
+                
+                // Update the mapping explanations and basepath display if needed
+                if (type === 'neutral' || isDataFormatError) {
+                    this.updateMappingExplanations();
+                    this.updateBasepathDisplay();
+                }
+                
+                // Add event listener for the toggle button if data is provided
+                if (data) {
+                    const toggleButton = this.errorMessage.querySelector('.data-toggle');
+                    const dataContainer = this.errorMessage.querySelector('.data-container');
+                    
+                    toggleButton.addEventListener('click', () => {
+                        const isExpanded = toggleButton.getAttribute('aria-expanded') === 'true';
+                        toggleButton.setAttribute('aria-expanded', !isExpanded);
+                        
+                        if (isExpanded) {
+                            toggleButton.textContent = 'Show Received Data ▼';
+                            dataContainer.classList.add('collapsed');
+                        } else {
+                            toggleButton.textContent = 'Hide Received Data ▲';
+                            dataContainer.classList.remove('collapsed');
+                        }
+                    });
+                }
+                
+                // Add styles for data display if not already present
+                if (!this.dataStylesAdded) {
+                    const styleElement = document.createElement('style');
+                    styleElement.textContent = `
+                        .data-display {
+                            margin-top: 20px;
+                            border-top: 1px solid #ddd;
+                            padding-top: 15px;
+                            text-align: left;
+                        }
+                        .data-toggle {
+                            background: #f0f0f0;
+                            border: 1px solid #ddd;
+                            border-radius: 4px;
+                            padding: 8px 12px;
+                            font-size: 13px;
+                            color: #555;
+                            cursor: pointer;
+                            margin-bottom: 10px;
+                            width: 100%;
+                            text-align: left;
+                            transition: background-color 0.2s;
+                        }
+                        .data-toggle:hover {
+                            background: #e8e8e8;
+                        }
+                        .data-container {
+                            max-height: 300px;
+                            overflow-y: auto;
+                            background: #f8f8f8;
+                            border: 1px solid #ddd;
+                            border-radius: 4px;
+                            padding: 10px;
+                            transition: max-height 0.3s ease-out;
+                        }
+                        .data-container.collapsed {
+                            max-height: 0;
+                            padding: 0;
+                            overflow: hidden;
+                            border: none;
+                        }
+                        .data-container pre {
+                            margin: 0;
+                            white-space: pre-wrap;
+                            font-family: monospace;
+                            font-size: 12px;
+                            color: #333;
+                        }
+                    `;
+                    this.shadowRoot.appendChild(styleElement);
+                    this.dataStylesAdded = true;
+                }
+                
+                // Clear any existing rectangles and redraw the canvas
                 this.rectangles = [];
                 this.drawRectangles();
             }
@@ -590,19 +725,19 @@ For configuration options, see the CONFIGURATION SECTION below.
                     // Validate data structure
                     if (!vaData.data || !Array.isArray(vaData.data)) {
                         this.showError("Invalid data format received", 
-                            "Data array is missing or not an array", 'error', true);
+                            "Data array is missing or not an array", 'error', true, vaData);
                         return;
                     }
                     
                     if (vaData.data.length === 0) {
                         this.showError("No data received", 
-                            "The data array is empty", 'error', true);
+                            "The data array is empty", 'error', true, vaData);
                         return;
                     }
                     
                     if (!vaData.columns) {
                         this.showError("Invalid data format received", 
-                            "Columns definition is missing", 'error', true);
+                            "Columns definition is missing", 'error', true, vaData);
                         return;
                     }
 
@@ -647,7 +782,8 @@ For configuration options, see the CONFIGURATION SECTION below.
                             "Missing required columns",
                             `The following columns are missing: ${missingColumns.join(', ')}. Available columns: ${vaData.columns.map(c => c.label).join(', ')}`,
                             'error',
-                            true
+                            true,
+                            vaData
                         );
                         return;
                     }
@@ -661,7 +797,8 @@ For configuration options, see the CONFIGURATION SECTION below.
                             "Image column not found", 
                             `Column '${this.columnMapping.image}' is missing from data. Available columns: ${vaData.columns.map(c => c.label).join(', ')}`,
                             'error',
-                            true
+                            true,
+                            vaData
                         );
                         return;
                     }
@@ -670,14 +807,16 @@ For configuration options, see the CONFIGURATION SECTION below.
                     const uniqueImages = new Set(vaData.data.map(row => row[imageIndex]));
                     if (uniqueImages.size === 0) {
                         this.showError("No image name provided", 
-                            "The image column contains no values", 'error', true);
+                            "The image column contains no values", 'error', true, vaData);
                         return;
                     }
                     
                     if (uniqueImages.size > 1) {
-                        this.showError("Multiple images detected", 
+                        this.showError("Select a single image to view", 
                             "Select a single image to view. Found: " + Array.from(uniqueImages).join(', '), 
-                            'neutral');
+                            'neutral',
+                            false,
+                            vaData);
                         return;
                     }
 
@@ -685,7 +824,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                     const imageName = vaData.data[0][imageIndex];
                     if (typeof imageName !== 'string' || !imageName) {
                         this.showError("Invalid image name format", 
-                            "Image name must be a non-empty string", 'error', true);
+                            "Image name must be a non-empty string", 'error', true, vaData);
                         return;
                     }
 
@@ -701,7 +840,10 @@ For configuration options, see the CONFIGURATION SECTION below.
                         
                         // Optional fields with fallbacks
                         const className = row[columnIndices[this.columnMapping.class]] || 'unknown';
-                        const probability = parseFloat(row[columnIndices[this.columnMapping.probability]]) || 1.0;
+                        // Parse probability but don't provide a fallback to preserve NaN
+                        const probability = columnIndices[this.columnMapping.probability] !== undefined ? 
+                            parseFloat(row[columnIndices[this.columnMapping.probability]]) : 
+                            NaN;
                         
                         // Create rectangle object
                         return {
@@ -739,7 +881,8 @@ For configuration options, see the CONFIGURATION SECTION below.
                         "Error processing data", 
                         error.message, 
                         'error', 
-                        true
+                        true,
+                        vaData
                     );
                 }
             }
@@ -1012,7 +1155,10 @@ For configuration options, see the CONFIGURATION SECTION below.
                     // Draw label if hovered
                     if (rect.hovered) {
                         const fontSize = 14;
-                        const labelText = `${rect.class}: ${(rect.probability * 100).toFixed(1)}%`;
+                        // Only show probability if it's a valid number
+                        const labelText = isNaN(rect.probability) ? 
+                            `${rect.class}` : 
+                            `${rect.class}: ${(rect.probability * 100).toFixed(1)}%`;
                         ctx.font = `${fontSize}px Arial`;
                         ctx.textBaseline = 'middle';
                         const textMetrics = ctx.measureText(labelText);
@@ -1224,19 +1370,53 @@ For configuration options, see the CONFIGURATION SECTION below.
                 const mappingDetails = this.shadowRoot.querySelector('.mapping-details');
                 const explanations = {
                     image: 'Name of the image file or local path. (mind the base path)',
+                    id: 'Unique identifier for each detection',
                     left: 'X coordinate of the top left bounding box corner (normalized 0-1)',
                     top: 'Y coordinate of the top left bounding box corner (normalized 0-1)',
                     width: 'Width of the bounding box relative to image width (normalized 0-1)',
                     height: 'Height of the bounding box relative to image height (normalized 0-1)',
                     class: 'Classification label of the detected object',
                     probability: 'Confidence score of the detection (0-1)',
-                    id: 'Unique numerical identifier for each detection'
+                    
+                };
+                
+                // Define column types (measure or category)
+                const columnTypes = {
+                    image: 'category',
+                    id: 'category',
+                    left: 'measure',
+                    top: 'measure',
+                    width: 'measure',
+                    height: 'measure',
+                    class: 'category',
+                    probability: 'measure',
+                };
+                
+                // Define which columns are required
+                const requiredColumns = {
+                    image: 'yes',
+                    id: 'yes',
+                    left: 'yes',
+                    top: 'yes',
+                    width: 'yes',
+                    height: 'yes',
+                    class: 'no',
+                    probability: 'no',
                 };
 
-                mappingDetails.innerHTML = Object.entries(this.columnMapping)
+                mappingDetails.innerHTML = `
+                    <div class="mapping-row mapping-header">
+                        <div class="mapping-label">Name</div>
+                        <div class="mapping-type">Type</div>
+                        <div class="mapping-required">Required</div>
+                        <div class="mapping-description">Description</div>
+                    </div>
+                ` + Object.entries(this.columnMapping)
                     .map(([key, label]) => `
                         <div class="mapping-row">
                             <div class="mapping-label">${label}</div>
+                            <div class="mapping-type">${columnTypes[key]}</div>
+                            <div class="mapping-required">${requiredColumns[key]}</div>
                             <div class="mapping-description">${explanations[key]}</div>
                         </div>
                     `).join('');
@@ -1299,10 +1479,11 @@ For configuration options, see the CONFIGURATION SECTION below.
              * @param {string} message - The error message to display
              * @param {string} details - Any error details
              * @param {boolean} isDataFormatError - Whether to show expected variables (defaults to false)
+             * @param {Object} data - Optional data object to display in structured format
              * @return {BboxViewerApp} The component instance for chaining
              */
-            reportError(message, details = '', isDataFormatError = false) {
-                this.showError(message, details, 'error', isDataFormatError);
+            reportError(message, details = '', isDataFormatError = false, data = null) {
+                this.showError(message, details, 'error', isDataFormatError, data);
                 return this;
             }
         }
