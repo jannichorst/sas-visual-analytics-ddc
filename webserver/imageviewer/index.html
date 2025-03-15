@@ -361,9 +361,8 @@ For configuration options, see the CONFIGURATION SECTION below.
                     if (!this.disableInteraction) {
                         this.toolbar.classList.remove('hidden');
                     }
-                    // Update image size and fit to container
+                    // Update image size with improved scaling
                     this.updateImageSize();
-                    this.fitImageToContainer();
                 });
                 
                 this.image.addEventListener('error', (e) => {
@@ -397,10 +396,9 @@ For configuration options, see the CONFIGURATION SECTION below.
              */
             _setupResizeObserver() {
                 this.resizeObserver = new ResizeObserver(() => {
-                    // When container is resized, update image size and fit to container
+                    // When container is resized, update image size with improved scaling
                     if (this.image.naturalWidth && this.image.naturalHeight) {
                         this.updateImageSize();
-                        this.fitImageToContainer();
                     }
                 });
                 this.resizeObserver.observe(this.imageContainer);
@@ -681,10 +679,9 @@ For configuration options, see the CONFIGURATION SECTION below.
                         this.toolbar.classList.remove('hidden');
                     }
                     
-                    // Update the view and fit image to container
+                    // Update the view with improved scaling
                     requestAnimationFrame(() => {
                         this.updateImageSize();
-                        this.fitImageToContainer();
                         this.updateZoomSlider();
                     });
                 };
@@ -781,7 +778,12 @@ For configuration options, see the CONFIGURATION SECTION below.
                 // Calculate the scaling factor to fit the image in the container
                 const scaleWidth = containerRect.width / this.image.naturalWidth;
                 const scaleHeight = containerRect.height / this.image.naturalHeight;
-                const scale = Math.min(scaleWidth, scaleHeight);
+                
+                // Use a slightly larger scale factor (90% of the way between min and max)
+                // This provides a better default zoom level that fills more of the container
+                const minScale = Math.min(scaleWidth, scaleHeight);
+                const maxScale = Math.max(scaleWidth, scaleHeight);
+                const scale = minScale + (maxScale - minScale) * 0.1; // 10% toward the max scale
                 
                 // Calculate base dimensions maintaining aspect ratio
                 const baseWidth = this.image.naturalWidth * scale;
@@ -796,7 +798,9 @@ For configuration options, see the CONFIGURATION SECTION below.
                         width: this.image.naturalWidth,
                         height: this.image.naturalHeight
                     },
-                    scale,
+                    minScale,
+                    maxScale,
+                    adjustedScale: scale,
                     zoomLevel: this.zoomLevel
                 });
                 
@@ -811,7 +815,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                     imageStyleHeight: this.image.style.height
                 });
                 
-                // Reset zoom and position
+                // Set zoom level to 1 since we've already scaled the image appropriately
                 this.zoomLevel = 1;
                 this.imageX = 0;
                 this.imageY = 0;
