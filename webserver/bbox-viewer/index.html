@@ -535,6 +535,14 @@ For configuration options, see the CONFIGURATION SECTION below.
                 this.errorText = this.shadowRoot.querySelector('#error-text');
                 this.errorDetails = this.shadowRoot.querySelector('#error-details');
 
+                // Add wheel event handler for error message to enable trackpad scrolling
+                this.errorMessage.addEventListener('wheel', (e) => {
+                    // Only stop propagation if the error message is scrollable
+                    if (this.errorMessage.scrollHeight > this.errorMessage.clientHeight) {
+                        e.stopPropagation();
+                    }
+                });
+
                 // Image loading events
                 this.image.addEventListener('load', () => {
                     this.originalImageWidth = this.image.naturalWidth;
