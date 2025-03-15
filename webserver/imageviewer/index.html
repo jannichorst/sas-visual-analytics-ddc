@@ -880,11 +880,11 @@ For configuration options, see the CONFIGURATION SECTION below.
             }
 
             /**
-             * Resets zoom and position to fit the image in the container
+             * Resets zoom and position to the default improved scaling
              */
             minimize() {
                 if (this.disableInteraction) return;
-                this.fitImageToContainer();
+                this.updateImageSize();
             }
 
             /**
