@@ -631,7 +631,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                 // Base HTML structure
                 let htmlContent = `
                     <div>
-                        ${type === 'error' ? `<h1>${message}</h1>` : `<h2>${message}</h2>`}
+                        ${type === 'error' || message === "Select a single image to view" ? `<h1>${message}</h1>` : `<h2>${message}</h2>`}
                         ${details ? `<div class="error-path" style="margin-bottom: 20px;">${details}</div>` : ''}
                     </div>
                 `;
