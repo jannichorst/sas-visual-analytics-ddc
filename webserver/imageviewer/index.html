@@ -46,7 +46,7 @@ For configuration options, see the CONFIGURATION SECTION below.
          * CONFIGURATION SECTION - MODIFY THESE VALUES AS NEEDED
          * ==================================================================== */
          
-        // Base path for loading images (e.g. './images/', 'https://<your_webserver.com>/path/to/this/index.html/images/')
+        // Base path for loading images (e.g. './images/' --> 'https://<your_webserver.com>/path/to/this/index.html/images/')
         const DEFAULT_BASE_PATH = './images/';
         
         // Whether user interactions (zoom, pan) are disabled
@@ -361,7 +361,8 @@ For configuration options, see the CONFIGURATION SECTION below.
                     if (!this.disableInteraction) {
                         this.toolbar.classList.remove('hidden');
                     }
-                    // Fit image to container
+                    // Update image size and fit to container
+                    this.updateImageSize();
                     this.fitImageToContainer();
                 });
                 
@@ -396,8 +397,11 @@ For configuration options, see the CONFIGURATION SECTION below.
              */
             _setupResizeObserver() {
                 this.resizeObserver = new ResizeObserver(() => {
-                    // When container is resized, fit the image to the new container size
-                    this.fitImageToContainer();
+                    // When container is resized, update image size and fit to container
+                    if (this.image.naturalWidth && this.image.naturalHeight) {
+                        this.updateImageSize();
+                        this.fitImageToContainer();
+                    }
                 });
                 this.resizeObserver.observe(this.imageContainer);
             }
@@ -459,8 +463,8 @@ For configuration options, see the CONFIGURATION SECTION below.
                 if (data) {
                     htmlContent += `
                         <div class="data-display">
-                            <h4>Received Data</h4>
-                            <div class="data-container">
+                            <button class="data-toggle" aria-expanded="false">Show Received Data ▼</button>
+                            <div class="data-container collapsed">
                                 <pre>${JSON.stringify(data, null, 2)}</pre>
                             </div>
                         </div>
@@ -472,6 +476,25 @@ For configuration options, see the CONFIGURATION SECTION below.
                 // Update the mapping explanations and basepath display
                 this.updateMappingExplanations();
                 this.updateBasepathDisplay();
+                
+                // Add event listener for the toggle button if data is provided
+                if (data) {
+                    const toggleButton = this.errorMessage.querySelector('.data-toggle');
+                    const dataContainer = this.errorMessage.querySelector('.data-container');
+                    
+                    toggleButton.addEventListener('click', () => {
+                        const isExpanded = toggleButton.getAttribute('aria-expanded') === 'true';
+                        toggleButton.setAttribute('aria-expanded', !isExpanded);
+                        
+                        if (isExpanded) {
+                            toggleButton.textContent = 'Show Received Data ▼';
+                            dataContainer.classList.add('collapsed');
+                        } else {
+                            toggleButton.textContent = 'Hide Received Data ▲';
+                            dataContainer.classList.remove('collapsed');
+                        }
+                    });
+                }
                 
                 // Add styles for data display if not already present
                 if (!this.dataStylesAdded) {
@@ -489,6 +512,22 @@ For configuration options, see the CONFIGURATION SECTION below.
                             margin: 0 0 15px 0;
                             font-weight: normal;
                         }
+                        .data-toggle {
+                            background: #f0f0f0;
+                            border: 1px solid #ddd;
+                            border-radius: 4px;
+                            padding: 8px 12px;
+                            font-size: 13px;
+                            color: #555;
+                            cursor: pointer;
+                            margin-bottom: 10px;
+                            width: 100%;
+                            text-align: left;
+                            transition: background-color 0.2s;
+                        }
+                        .data-toggle:hover {
+                            background: #e8e8e8;
+                        }
                         .data-container {
                             max-height: 300px;
                             overflow-y: auto;
@@ -496,6 +535,13 @@ For configuration options, see the CONFIGURATION SECTION below.
                             border: 1px solid #ddd;
                             border-radius: 4px;
                             padding: 10px;
+                            transition: max-height 0.3s ease-out;
+                        }
+                        .data-container.collapsed {
+                            max-height: 0;
+                            padding: 0;
+                            overflow: hidden;
+                            border: none;
                         }
                         .data-container pre {
                             margin: 0;
@@ -637,6 +683,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                     
                     // Update the view and fit image to container
                     requestAnimationFrame(() => {
+                        this.updateImageSize();
                         this.fitImageToContainer();
                         this.updateZoomSlider();
                     });
@@ -723,23 +770,74 @@ For configuration options, see the CONFIGURATION SECTION below.
             }
 
             /**
+             * Updates the image size based on container dimensions and natural image dimensions
+             * This ensures consistent scaling across different images
+             */
+            updateImageSize() {
+                // Get container dimensions
+                const container = this.shadowRoot.querySelector('#image-container');
+                const containerRect = container.getBoundingClientRect();
+                
+                // Calculate the scaling factor to fit the image in the container
+                const scaleWidth = containerRect.width / this.image.naturalWidth;
+                const scaleHeight = containerRect.height / this.image.naturalHeight;
+                const scale = Math.min(scaleWidth, scaleHeight);
+                
+                // Calculate base dimensions maintaining aspect ratio
+                const baseWidth = this.image.naturalWidth * scale;
+                const baseHeight = this.image.naturalHeight * scale;
+                
+                console.log('updateImageSize - Input values:', {
+                    containerDimensions: {
+                        width: containerRect.width,
+                        height: containerRect.height
+                    },
+                    naturalDimensions: {
+                        width: this.image.naturalWidth,
+                        height: this.image.naturalHeight
+                    },
+                    scale,
+                    zoomLevel: this.zoomLevel
+                });
+                
+                // Update image size
+                this.image.style.width = `${baseWidth}px`;
+                this.image.style.height = `${baseHeight}px`;
+                
+                console.log('updateImageSize - Calculated values:', {
+                    baseWidth,
+                    baseHeight,
+                    imageStyleWidth: this.image.style.width,
+                    imageStyleHeight: this.image.style.height
+                });
+                
+                // Reset zoom and position
+                this.zoomLevel = 1;
+                this.imageX = 0;
+                this.imageY = 0;
+                
+                // Update the transform
+                this.updateImageTransform(true);
+                this.updateZoomSlider();
+            }
+
+            /**
              * Scales the image to fit the container while maintaining aspect ratio
              * This can be used regardless of whether interaction is enabled or disabled
              */
             fitImageToContainer() {
                 const containerWidth = this.shadowRoot.querySelector('#image-container').clientWidth;
                 const containerHeight = this.shadowRoot.querySelector('#image-container').clientHeight;
-                const rect = this.image.getBoundingClientRect();
-                const imageWidth = rect.width / this.zoomLevel;
-                const imageHeight = rect.height / this.zoomLevel;
-
-                if (imageWidth === 0 || imageHeight === 0) return; // Image not loaded yet
-
-                const widthScale = containerWidth / imageWidth;
-                const heightScale = containerHeight / imageHeight;
-
+                
+                // If the image is not loaded or has no dimensions, we can't proceed
+                if (!this.image.naturalWidth || !this.image.naturalHeight) return;
+                
+                // Calculate the scaling factor to fit the image in the container
+                const scaleWidth = containerWidth / this.image.naturalWidth;
+                const scaleHeight = containerHeight / this.image.naturalHeight;
+                
                 // Use the smaller scale to ensure the image fits the container
-                this.zoomLevel = Math.min(widthScale, heightScale);
+                this.zoomLevel = Math.min(scaleWidth, scaleHeight);
                 this.imageX = 0;
                 this.imageY = 0;
                 this.updateZoomSlider();
@@ -753,17 +851,16 @@ For configuration options, see the CONFIGURATION SECTION below.
             fillImageToContainer() {
                 const containerWidth = this.shadowRoot.querySelector('#image-container').clientWidth;
                 const containerHeight = this.shadowRoot.querySelector('#image-container').clientHeight;
-                const rect = this.image.getBoundingClientRect();
-                const imageWidth = rect.width / this.zoomLevel;
-                const imageHeight = rect.height / this.zoomLevel;
-
-                if (imageWidth === 0 || imageHeight === 0) return; // Image not loaded yet
-
-                const widthScale = containerWidth / imageWidth;
-                const heightScale = containerHeight / imageHeight;
-
+                
+                // If the image is not loaded or has no dimensions, we can't proceed
+                if (!this.image.naturalWidth || !this.image.naturalHeight) return;
+                
+                // Calculate the scaling factor to fill the container
+                const scaleWidth = containerWidth / this.image.naturalWidth;
+                const scaleHeight = containerHeight / this.image.naturalHeight;
+                
                 // Use the larger scale to ensure the image fills the container
-                this.zoomLevel = Math.max(widthScale, heightScale);
+                this.zoomLevel = Math.max(scaleWidth, scaleHeight);
                 this.imageX = 0;
                 this.imageY = 0;
                 this.updateZoomSlider();
