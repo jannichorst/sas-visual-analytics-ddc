@@ -611,17 +611,21 @@ For configuration options, see the CONFIGURATION SECTION below.
              * Displays an error message and hides the image
              * @param {string} message - The main error message to display
              * @param {string} details - Additional error details (like a file path)
-             * @param {string} type - Error type: 'error' or 'neutral' for informational messages
+             * @param {string} type - Error type: 'error', 'neutral', or 'type-error' for validation errors
              * @param {boolean} isDataFormatError - Whether this is a data format error (should show expected variables)
              * @param {Object} data - Optional data object to display in structured format
              */
             showError(message, details = '', type = 'error', isDataFormatError = false, data = null) {
                 this.errorMessage.style.display = 'block';
-                this.image.style.display = 'none';
-                this.shadowRoot.querySelector('#toolbar').classList.add('hidden');
+                
+                // Only hide the image for regular errors, not for type validation errors
+                if (type !== 'type-error') {
+                    this.image.style.display = 'none';
+                    this.shadowRoot.querySelector('#toolbar').classList.add('hidden');
+                }
                 
                 // Reset classes and apply the appropriate one
-                this.errorMessage.classList.remove('error', 'neutral');
+                this.errorMessage.classList.remove('error', 'neutral', 'type-error');
                 this.errorMessage.classList.add(type);
                 
                 // Base HTML structure
@@ -731,14 +735,35 @@ For configuration options, see the CONFIGURATION SECTION below.
                             font-size: 12px;
                             color: #333;
                         }
+                        
+                        /* Type error specific styles */
+                        #error-message.type-error {
+                            background-color: rgba(255, 220, 220, 0.95);
+                            border: 1px solid #d32f2f;
+                            border-radius: 4px;
+                            max-width: 800px;
+                            width: 80%;
+                            position: absolute;
+                            top: 10px;
+                            left: 50%;
+                            transform: translateX(-50%);
+                            z-index: 1000;
+                            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                        }
+                        
+                        #error-message.type-error h2 {
+                            color: #d32f2f;
+                        }
                     `;
                     this.shadowRoot.appendChild(styleElement);
                     this.dataStylesAdded = true;
                 }
                 
                 // Clear any existing rectangles and redraw the canvas
-                this.rectangles = [];
-                this.drawRectangles();
+                if (type !== 'type-error') {
+                    this.rectangles = [];
+                    this.drawRectangles();
+                }
             }
 
             /**
@@ -1017,55 +1042,14 @@ For configuration options, see the CONFIGURATION SECTION below.
              * @param {Object} data - Optional data object to display in structured format
              */
             showTypeError(message, details, data = null) {
-                // Create a container for the error message if it doesn't exist
-                let typeErrorContainer = this.shadowRoot.querySelector('#type-error-container');
-                if (!typeErrorContainer) {
-                    typeErrorContainer = document.createElement('div');
-                    typeErrorContainer.id = 'type-error-container';
-                    typeErrorContainer.style.cssText = `
-                        position: absolute;
-                        top: 10px;
-                        left: 50%;
-                        transform: translateX(-50%);
-                        width: 80%;
-                        max-width: 800px;
-                        background-color: rgba(255, 220, 220, 0.95);
-                        border: 1px solid #d32f2f;
-                        border-radius: 4px;
-                        padding: 15px;
-                        color: #d32f2f;
-                        font-family: Arial, sans-serif;
-                        z-index: 1000;
-                        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-                        text-align: left;
-                    `;
-                    this.shadowRoot.querySelector('#image-container').appendChild(typeErrorContainer);
+                // Use the existing showError method with a special flag to keep the image visible
+                this.showError(message, details, 'type-error', true, data);
+                
+                // Make sure the image and toolbar remain visible
+                if (this.image.complete && this.image.naturalWidth > 0) {
+                    this.image.style.display = 'block';
+                    this.shadowRoot.querySelector('#toolbar').classList.remove('hidden');
                 }
-                
-                // Set the error message content
-                typeErrorContainer.innerHTML = `
-                    <h3 style="margin-top: 0; margin-bottom: 10px; color: #d32f2f;">${message}</h3>
-                    <div style="margin-bottom: 15px; font-size: 14px; color: #333;">${details}</div>
-                    <button id="dismiss-error" style="
-                        background: #f0f0f0;
-                        border: 1px solid #ccc;
-                        border-radius: 4px;
-                        padding: 5px 10px;
-                        cursor: pointer;
-                        font-size: 12px;
-                    ">Dismiss</button>
-                `;
-                
-                // Add event listener to dismiss button
-                typeErrorContainer.querySelector('#dismiss-error').addEventListener('click', () => {
-                    typeErrorContainer.style.display = 'none';
-                });
-                
-                // Make sure the error is visible
-                typeErrorContainer.style.display = 'block';
-                
-                // Update the mapping explanations to show the expected types
-                this.updateMappingExplanations();
             }
 
             /**
@@ -1585,25 +1569,12 @@ For configuration options, see the CONFIGURATION SECTION below.
                     probability: 'no',
                 };
                 
-                // Define expected types and usages
-                const expectedTypes = {
-                    image: 'string or categorical',
-                    id: 'string or categorical',
-                    left: 'quantitative',
-                    top: 'quantitative',
-                    width: 'quantitative',
-                    height: 'quantitative',
-                    class: 'string or categorical',
-                    probability: 'quantitative',
-                };
-
                 mappingDetails.innerHTML = `
                     <div class="mapping-row mapping-header">
                         <div class="mapping-label">Label</div>
                         <div class="mapping-type">Type</div>
                         <div class="mapping-required">Required</div>
                         <div class="mapping-description">Description</div>
-                        <div class="mapping-expected">Expected Type/Usage</div>
                     </div>
                 ` + Object.entries(this.columnMapping)
                     .map(([key, label]) => `
@@ -1612,33 +1583,8 @@ For configuration options, see the CONFIGURATION SECTION below.
                             <div class="mapping-type">${columnTypes[key]}</div>
                             <div class="mapping-required">${requiredColumns[key]}</div>
                             <div class="mapping-description">${explanations[key]}</div>
-                            <div class="mapping-expected">${expectedTypes[key]}</div>
                         </div>
                     `).join('');
-                
-                // Add styles for the new column if not already present
-                if (!this.mappingStylesAdded) {
-                    const styleElement = document.createElement('style');
-                    styleElement.textContent = `
-                        .mapping-expected {
-                            display: table-cell;
-                            padding: 6px 4px;
-                            color: #888;
-                            font-size: 12px;
-                            width: 140px;
-                            white-space: nowrap;
-                        }
-                        
-                        .mapping-row.mapping-header .mapping-expected {
-                            padding: 8px 4px;
-                            color: #444;
-                            font-size: 13px;
-                            font-weight: 600;
-                        }
-                    `;
-                    this.shadowRoot.appendChild(styleElement);
-                    this.mappingStylesAdded = true;
-                }
             }
 
             // === API Methods ===
