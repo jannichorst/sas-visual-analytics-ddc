@@ -58,13 +58,13 @@ For configuration options, see the CONFIGURATION SECTION below.
         // Field name mapping (maps component's expected field names to your data's field names)
         const DEFAULT_COLUMN_MAPPING = {
             image: 'image',     // Image filename or path
+            id: 'id',            // Unique identifier
             left: 'left',       // Left coordinate (normalized 0-1)
             top: 'top',         // Top coordinate (normalized 0-1)
             width: 'width',     // Width (normalized 0-1)
             height: 'height',   // Height (normalized 0-1)
             class: 'class',     // Object class/category name
-            probability: 'probability', // Detection confidence (0-1)
-            id: 'id'            // Unique identifier
+            probability: 'probability' // Detection confidence (0-1)
         };
         
         // Predefined colors for common object classes
@@ -226,6 +226,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                             display: block !important;
                             margin-bottom: 30px;
                             font-size: 24px;
+                            font-weight: 500;
                         }
 
                         .error-path {
@@ -235,6 +236,9 @@ For configuration options, see the CONFIGURATION SECTION below.
                             padding: 8px;
                             border-radius: 4px;
                             display: inline-block;
+                            max-width: 100%;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
                         }
 
                         /* Common text styles */
@@ -321,7 +325,6 @@ For configuration options, see the CONFIGURATION SECTION below.
                         .mapping-row.mapping-header {
                             font-weight: 600;
                             border-bottom: 1px solid #999;
-                            background-color: #f5f5f5;
                         }
                         
                         .mapping-row.mapping-header .mapping-label,
@@ -355,6 +358,10 @@ For configuration options, see the CONFIGURATION SECTION below.
                             width: 80px;
                             white-space: nowrap;
                             text-align: center;
+                        }
+
+                        .mapping-type {
+                            text-align: left;
                         }
 
                         .mapping-description {
@@ -415,7 +422,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                             <canvas id="overlay"></canvas>
                             <div id="error-message">
                                 <div id="mapping-info" class="mapping-info">
-                                    <h2>elect a single image to view</h2>
+                                    <h2>Select a single image to view</h2>
                                     <h4>Expected Variables</h4>
                                     <div class="mapping-details"></div>
                                     <div class="base-path-info"></div>
@@ -585,7 +592,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                 let htmlContent = `
                     <div>
                         ${type === 'error' ? `<h1>${message}</h1>` : `<h2>${message}</h2>`}
-                        ${details ? `<div class="error-path">${details}</div>` : ''}
+                        ${details ? `<div class="error-path" style="margin-bottom: 20px;">${details}</div>` : ''}
                     </div>
                 `;
                 
@@ -812,8 +819,12 @@ For configuration options, see the CONFIGURATION SECTION below.
                     }
                     
                     if (uniqueImages.size > 1) {
+                        // Format the image list in a more user-friendly way
+                        const imageCount = uniqueImages.size;
+                        const details = `${imageCount} images found. Please select a single image.`;
+                        
                         this.showError("Select a single image to view", 
-                            "Select a single image to view. Found: " + Array.from(uniqueImages).join(', '), 
+                            details, 
                             'neutral',
                             false,
                             vaData);
@@ -1382,14 +1393,14 @@ For configuration options, see the CONFIGURATION SECTION below.
                 
                 // Define column types (measure or category)
                 const columnTypes = {
-                    image: 'category',
-                    id: 'category',
-                    left: 'measure',
-                    top: 'measure',
-                    width: 'measure',
-                    height: 'measure',
-                    class: 'category',
-                    probability: 'measure',
+                    image: 'Category',
+                    id: 'Category',
+                    left: 'Measure',
+                    top: 'Measure',
+                    width: 'Measure',
+                    height: 'Measure',
+                    class: 'Category',
+                    probability: 'Measure',
                 };
                 
                 // Define which columns are required
@@ -1406,8 +1417,8 @@ For configuration options, see the CONFIGURATION SECTION below.
 
                 mappingDetails.innerHTML = `
                     <div class="mapping-row mapping-header">
-                        <div class="mapping-label">Name</div>
-                        <div class="mapping-type">Type</div>
+                        <div class="mapping-label">Label</div>
+                        <div class="mapping-type">VA-Type</div>
                         <div class="mapping-required">Required</div>
                         <div class="mapping-description">Description</div>
                     </div>
