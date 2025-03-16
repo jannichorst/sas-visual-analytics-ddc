@@ -120,13 +120,61 @@ For configuration options, see the CONFIGURATION SECTION below.
                             text-align: center;
                             z-index: 3;
                             font-family: Arial, sans-serif;
-                            min-width: 400px;
+                            min-width: 500px;
+                            width: 80%;
+                            max-width: 800px;
+                            max-height: 80vh;
+                            overflow-y: auto;
                             padding: 20px;
+                            box-sizing: border-box;
+                            background: white;
+                            border-radius: 8px;
+                            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
                         }
 
+                        @media (max-width: 600px) {
+                            #error-message {
+                                min-width: 90%;
+                                width: 90%;
+                                padding: 15px;
+                                max-height: 85vh;
+                            }
+                        }
+
+                        /* Scrollbar styling for error message */
+                        #error-message::-webkit-scrollbar {
+                            width: 8px;
+                            height: 8px;
+                        }
+
+                        #error-message::-webkit-scrollbar-track {
+                            background: #f1f1f1;
+                            border-radius: 4px;
+                        }
+
+                        #error-message::-webkit-scrollbar-thumb {
+                            background: #ccc;
+                            border-radius: 4px;
+                        }
+
+                        #error-message::-webkit-scrollbar-thumb:hover {
+                            background: #aaa;
+                        }
+
+                        /* For Firefox */
+                        #error-message {
+                            scrollbar-width: thin;
+                            scrollbar-color: #ccc #f1f1f1;
+                        }
+
+                        /* Error message styles */
                         #error-message.error,
                         #error-message.neutral {
-                            background: none;
+                            background: white;
+                        }
+
+                        #error-message.neutral {
+                            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
                         }
 
                         #error-message h1,
@@ -159,9 +207,61 @@ For configuration options, see the CONFIGURATION SECTION below.
                             padding: 8px;
                             border-radius: 4px;
                             display: inline-block;
+                            max-width: 100%;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
                         }
 
-                        /* Mapping info styles */
+                        /* Common text styles */
+                        #error-text,
+                        #error-details {
+                            color: #666;
+                            margin: 10px 0;
+                        }
+
+                        #error-text {
+                            font-size: 14px;
+                        }
+
+                        #error-details {
+                            background: #fff;
+                            padding: 10px;
+                            border-radius: 4px;
+                            font-family: monospace;
+                            white-space: pre-wrap;
+                            text-align: left;
+                            font-size: 12px;
+                            max-height: 200px;
+                            overflow-y: auto;
+                        }
+                        
+                        /* Scrollbar styling for error details */
+                        #error-details::-webkit-scrollbar {
+                            width: 8px;
+                            height: 8px;
+                        }
+                        
+                        #error-details::-webkit-scrollbar-track {
+                            background: #f1f1f1;
+                            border-radius: 4px;
+                        }
+                        
+                        #error-details::-webkit-scrollbar-thumb {
+                            background: #ccc;
+                            border-radius: 4px;
+                        }
+                        
+                        #error-details::-webkit-scrollbar-thumb:hover {
+                            background: #aaa;
+                        }
+
+                        /* For Firefox */
+                        #error-details {
+                            scrollbar-width: thin;
+                            scrollbar-color: #ccc #f1f1f1;
+                        }
+
+                        /* Mapping styles */
                         .mapping-info {
                             margin-top: 20px;
                             color: #666;
@@ -190,10 +290,6 @@ For configuration options, see the CONFIGURATION SECTION below.
                             box-shadow: none;
                         }
 
-                        .mapping-row {
-                            display: table-row;
-                        }
-
                         .mapping-label,
                         .mapping-description {
                             display: table-cell;
@@ -217,6 +313,78 @@ For configuration options, see the CONFIGURATION SECTION below.
                             font-size: 12px;
                             margin-top: 15px;
                             text-align: left;
+                        }
+
+                        /* Data display styles */
+                        .data-display {
+                            margin-top: 20px;
+                            border-top: 1px solid #ddd;
+                            padding-top: 15px;
+                            text-align: left;
+                        }
+                        .data-toggle {
+                            background: #f0f0f0;
+                            border: 1px solid #ddd;
+                            border-radius: 4px;
+                            padding: 8px 12px;
+                            font-size: 13px;
+                            color: #555;
+                            cursor: pointer;
+                            margin-bottom: 10px;
+                            width: 100%;
+                            text-align: left;
+                            transition: background-color 0.2s;
+                        }
+                        .data-toggle:hover {
+                            background: #e8e8e8;
+                        }
+                        .data-container {
+                            max-height: 300px;
+                            overflow-y: auto;
+                            background: #f8f8f8;
+                            border: 1px solid #ddd;
+                            border-radius: 4px;
+                            padding: 10px;
+                            transition: max-height 0.3s ease-out;
+                        }
+                        .data-container.collapsed {
+                            max-height: 0;
+                            padding: 0;
+                            overflow: hidden;
+                            border: none;
+                        }
+                        .data-container pre {
+                            margin: 0;
+                            white-space: pre-wrap;
+                            font-family: monospace;
+                            font-size: 12px;
+                            color: #333;
+                        }
+                        
+                        /* Scrollbar styling for data container */
+                        .data-container::-webkit-scrollbar {
+                            width: 8px;
+                            height: 8px;
+                        }
+                        
+                        .data-container::-webkit-scrollbar-track {
+                            background: #f1f1f1;
+                            border-radius: 4px;
+                        }
+                        
+                        .data-container::-webkit-scrollbar-thumb {
+                            background: #ccc;
+                            border-radius: 4px;
+                        }
+                        
+                        .data-container::-webkit-scrollbar-thumb:hover {
+                            background: #aaa;
+                        }
+                        
+                        /* For Firefox */
+                        .data-container {
+                            scrollbar-width: thin;
+                            scrollbar-color: #ccc #f1f1f1;
                         }
 
                         /* Control styles */
@@ -409,17 +577,39 @@ For configuration options, see the CONFIGURATION SECTION below.
              */
             updateMappingExplanations() {
                 const mappingDetails = this.shadowRoot.querySelector('.mapping-details');
+                const explanations = {
+                    basepath: 'Base path for loading images (e.g. "./images/")',
+                    interactive: 'Enable or disable user interaction ("true" or "false")'
+                };
+                
+                // Define column types
+                const columnTypes = {
+                    basepath: 'Parameter',
+                    interactive: 'Parameter'
+                };
+                
+                // Define which columns are required
+                const requiredColumns = {
+                    basepath: 'no',
+                    interactive: 'no'
+                };
                 
                 mappingDetails.innerHTML = `
-                    <div class="mapping-row">
-                        <div class="mapping-label">Data</div>
-                        <div class="mapping-description">Send a single column containing the image filename or relative path</div>
+                    <div class="mapping-row mapping-header">
+                        <div class="mapping-label">Label</div>
+                        <div class="mapping-type">Type</div>
+                        <div class="mapping-required">Required</div>
+                        <div class="mapping-description">Description</div>
                     </div>
-                    <div class="mapping-row">
-                        <div class="mapping-label">Optional</div>
-                        <div class="mapping-description">Add a parameter named 'basepath' to specify image location</div>
-                    </div>
-                `;
+                ` + Object.entries(explanations)
+                    .map(([key, description]) => `
+                        <div class="mapping-row">
+                            <div class="mapping-label">${key}</div>
+                            <div class="mapping-type">${columnTypes[key]}</div>
+                            <div class="mapping-required">${requiredColumns[key]}</div>
+                            <div class="mapping-description">${description}</div>
+                        </div>
+                    `).join('');
             }
 
             /**
@@ -579,6 +769,14 @@ For configuration options, see the CONFIGURATION SECTION below.
                                 console.log("ImageViewer: Updated base path to", this.basePath);
                                 basepathChanged = true;
                             }
+                        }
+                    
+                        // Check for interactive parameter
+                        const interactiveParam = event.data.parameters.find(p => p.label === "interactive");
+                        if (interactiveParam && (interactiveParam.value === "true" || interactiveParam.value === "false")) {
+                            const shouldBeInteractive = interactiveParam.value === "true";
+                            this.setDisableInteraction(!shouldBeInteractive);
+                            console.log("ImageViewer: Interaction set to", shouldBeInteractive);
                         }
                     }
                 
