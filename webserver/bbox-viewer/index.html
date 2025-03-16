@@ -99,135 +99,111 @@ For configuration options, see the CONFIGURATION SECTION below.
             box-sizing: border-box;
             background: transparent;
             border-radius: 8px;
-        }
-
-        /* Toolbar styles */
-        #toolbar {
-            height: 50px;
-            background-color: transparent;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1;
-        }
-
-        #toolbar.hidden {
-            display: none;
-        }
-
-        #zoom-slider {
-            width: 100px;
-            opacity: 0.7;
-        }
-
-        #zoom-slider:hover {
-            opacity: 1;
-        }
-
-        .data-display {
-            margin-top: 20px;
-            border-top: 1px solid #ddd;
-            padding-top: 15px;
-            text-align: left;
-        }
-        .data-toggle {
-            background: transparent;
-            border: 1px solid rgba(221, 221, 221, 0.3);
-            border-radius: 4px;
-            padding: 8px 12px;
-            font-size: 13px;
             color: #fff;
-            cursor: pointer;
-            margin-bottom: 10px;
-            width: 100%;
-            text-align: left;
-            transition: background-color 0.2s;
         }
-        .data-toggle:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        .data-container {
-            max-height: 300px;
-            overflow-y: auto;
-            background: transparent;
-            border: 1px solid rgba(221, 221, 221, 0.3);
-            border-radius: 4px;
-            padding: 10px;
-            transition: max-height 0.3s ease-out;
+
+        #error-message h1,
+        #error-message h2 {
+            color: #fff;
+            margin-top: 0;
             margin-bottom: 15px;
         }
-        .data-container.collapsed {
-            max-height: 0;
-            padding: 0;
-            overflow: hidden;
-            border: none;
+
+        #error-message h1 {
+            font-size: 28px;
         }
-        .data-container pre {
-            margin: 0;
-            white-space: pre-wrap;
+
+        #error-message h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        #error-message.neutral h2 {
+            color: #fff;
+            display: block !important;
+            margin-bottom: 30px;
+            font-size: 24px;
+            font-weight: 500;
+        }
+
+        .error-path {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            word-break: break-all;
+            padding: 8px;
+            border-radius: 4px;
+            display: inline-block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Common text styles */
+        #error-text,
+        #error-details {
+            color: rgba(255, 255, 255, 0.8);
+            margin: 10px 0;
+        }
+
+        #error-text {
+            font-size: 14px;
+        }
+
+        #error-details {
+            background: transparent;
+            padding: 10px;
+            border-radius: 4px;
             font-family: monospace;
+            white-space: pre-wrap;
+            text-align: left;
             font-size: 12px;
-            color: #333;
+            max-height: 200px;
+            overflow-y: auto;
+            color: #fff;
         }
         
-        /* Scrollbar styling for data container */
-        .data-container::-webkit-scrollbar {
+        /* Scrollbar styling for error details */
+        #error-details::-webkit-scrollbar {
             width: 8px;
             height: 8px;
         }
         
-        .data-container::-webkit-scrollbar-track {
+        #error-details::-webkit-scrollbar-track {
             background: #f1f1f1;
             border-radius: 4px;
         }
         
-        .data-container::-webkit-scrollbar-thumb {
+        #error-details::-webkit-scrollbar-thumb {
             background: #ccc;
             border-radius: 4px;
         }
         
-        .data-container::-webkit-scrollbar-thumb:hover {
+        #error-details::-webkit-scrollbar-thumb:hover {
             background: #aaa;
         }
-        
+
         /* For Firefox */
-        .data-container {
+        #error-details {
             scrollbar-width: thin;
             scrollbar-color: #ccc #f1f1f1;
         }
-        
-        /* Type error specific styles */
-        #error-message.type-error {
-            background-color: rgba(211, 47, 47, 0.2);
-            border: 1px solid rgba(211, 47, 47, 0.5);
-            border-radius: 4px;
-            max-width: 800px;
-            width: 80%;
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-        }
-        
-        #error-message.type-error h2 {
-            color: #ff6b6b;
-        }
 
-
+        /* Mapping styles */
         .mapping-info {
-            margin-top: 0;
-            color: #fff;
+            margin-top: 20px;
+            color: #666;
             text-align: left;
             padding: 0;
             font-size: 13px;
             background: none;
         }
 
-        #error-message .mapping-info {
-            margin-top: 20px;
-            border-top: 1px solid rgba(221, 221, 221, 0.5);
-            padding-top: 15px;
+        .mapping-info h4 {
+            color: #333;
+            font-size: 16px;
+            margin: 0 0 15px 0;
+            font-weight: 500;
         }
 
         .mapping-details {
@@ -237,28 +213,26 @@ For configuration options, see the CONFIGURATION SECTION below.
             width: 100%;
             background: none;
             border-radius: 0;
+            box-shadow: none;
         }
 
-        .mapping-row:not(.mapping-header) {
-            border-bottom: 1px solid rgba(238, 238, 238, 0.5);
-        }
-
-        .mapping-row:not(.mapping-header):hover {
-            background-color: rgba(255, 255, 255, 0.1);
+        .mapping-row {
+            display: table-row;
         }
 
         .mapping-row.mapping-header {
-            font-weight: 600;
-            border-bottom: 1px solid rgba(153, 153, 153, 0.5);
+            border-bottom: 1px solid #ddd;
         }
 
-        .mapping-row.mapping-header .mapping-label,
-        .mapping-row.mapping-header .mapping-type,
-        .mapping-row.mapping-header .mapping-required,
-        .mapping-row.mapping-header .mapping-description {
-            padding: 8px 4px;
-            color: #444;
-            font-size: 13px;
+        .mapping-row.mapping-header > div {
+            color: #333;
+            font-weight: 500;
+            padding: 0;
+            text-align: left;
+        }
+
+        .mapping-row.mapping-header > .mapping-description {
+            padding: 0 12px;
         }
 
         .mapping-label,
@@ -266,44 +240,44 @@ For configuration options, see the CONFIGURATION SECTION below.
         .mapping-required,
         .mapping-description {
             display: table-cell;
-            padding: 6px 4px;
-            color: #888;
-            font-size: 12px;
+            padding: 8px 0;
+            color: #666;
+            font-size: 13px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+            vertical-align: top;
         }
 
         .mapping-label {
-            font-weight: 500;
-            width: 60px;
-            white-space: nowrap;
-        }
-        
-        .mapping-type,
-        .mapping-required {
-            font-weight: 400;
             width: 80px;
             white-space: nowrap;
-            text-align: center;
         }
 
         .mapping-type {
-            text-align: left;
+            width: 80px;
+            white-space: nowrap;
+        }
+
+        .mapping-required {
+            width: 70px;
+            white-space: nowrap;
         }
 
         .mapping-description {
+            width: auto;
             padding-left: 12px;
+            min-width: 200px;
         }
 
-        /* Ensure all header cells have the same alignment as their column values */
-        .mapping-row.mapping-header .mapping-description {
-            padding-left: 12px;
+        .base-path-info {
+            color: #666;
+            font-size: 13px;
+            text-align: left;
+            padding: 8px 0px;
         }
-        
-        /* Ensure all header cells have the same font weight */
-        .mapping-row.mapping-header .mapping-label,
-        .mapping-row.mapping-header .mapping-type,
-        .mapping-row.mapping-header .mapping-required,
-        .mapping-row.mapping-header .mapping-description {
-            font-weight: 600;
+
+        .mapping-toggle {
+            display: none;
         }
 
         /* Control styles */
@@ -612,6 +586,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                             box-sizing: border-box;
                             background: transparent;
                             border-radius: 8px;
+                            color: #fff;
                         }
 
                         @media (max-width: 600px) {
@@ -652,7 +627,7 @@ For configuration options, see the CONFIGURATION SECTION below.
 
                         #error-message h1,
                         #error-message h2 {
-                            color: #d32f2f;
+                            color: #fff;
                             margin-top: 0;
                             margin-bottom: 15px;
                         }
@@ -668,7 +643,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                         }
 
                         #error-message.neutral h2 {
-                            color: #333;
+                            color: #fff;
                             display: block !important;
                             margin-bottom: 30px;
                             font-size: 24px;
@@ -676,7 +651,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                         }
 
                         .error-path {
-                            color: #666;
+                            color: rgba(255, 255, 255, 0.8);
                             font-size: 14px;
                             word-break: break-all;
                             padding: 8px;
@@ -690,7 +665,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                         /* Common text styles */
                         #error-text,
                         #error-details {
-                            color: #666;
+                            color: rgba(255, 255, 255, 0.8);
                             margin: 10px 0;
                         }
 
@@ -739,39 +714,21 @@ For configuration options, see the CONFIGURATION SECTION below.
 
                         /* Mapping styles */
                         .mapping-info {
-                            margin-top: 0;
-                            color: #fff;
+                            margin-top: 20px;
+                            color: #666;
                             text-align: left;
                             padding: 0;
                             font-size: 13px;
                             background: none;
                         }
 
-                        #error-message .mapping-info {
-                            margin-top: 20px;
-                            border-top: 1px solid rgba(221, 221, 221, 0.5);
-                            padding-top: 15px;
-                        }
-
                         .mapping-info h4 {
-                            color: #fff;
-                            font-size: 14px;
+                            color: #333;
+                            font-size: 16px;
                             margin: 0 0 15px 0;
-                            font-weight: normal;
+                            font-weight: 500;
                         }
 
-                        .base-path-info {
-                            color: rgba(255, 255, 255, 0.8);
-                            font-size: 12px;
-                            margin-top: 15px;
-                            text-align: left;
-                        }
-
-                        .mapping-toggle {
-                            display: none;
-                        }
-
-                        /* Mapping table styles */
                         .mapping-details {
                             display: table !important;
                             margin-top: 0;
@@ -779,32 +736,26 @@ For configuration options, see the CONFIGURATION SECTION below.
                             width: 100%;
                             background: none;
                             border-radius: 0;
+                            box-shadow: none;
                         }
 
                         .mapping-row {
                             display: table-row;
                         }
-                        
-                        .mapping-row:not(.mapping-header) {
-                            border-bottom: 1px solid rgba(238, 238, 238, 0.5);
-                        }
-                        
-                        .mapping-row:not(.mapping-header):hover {
-                            background-color: rgba(255, 255, 255, 0.1);
-                        }
-                        
+
                         .mapping-row.mapping-header {
-                            font-weight: 600;
-                            border-bottom: 1px solid rgba(153, 153, 153, 0.5);
+                            border-bottom: 1px solid #ddd;
                         }
-                        
-                        .mapping-row.mapping-header .mapping-label,
-                        .mapping-row.mapping-header .mapping-type,
-                        .mapping-row.mapping-header .mapping-required,
-                        .mapping-row.mapping-header .mapping-description {
-                            padding: 8px 4px;
-                            color: #444;
-                            font-size: 13px;
+
+                        .mapping-row.mapping-header > div {
+                            color: #333;
+                            font-weight: 500;
+                            padding: 0;
+                            text-align: left;
+                        }
+
+                        .mapping-row.mapping-header > .mapping-description {
+                            padding: 0 12px;
                         }
 
                         .mapping-label,
@@ -812,44 +763,44 @@ For configuration options, see the CONFIGURATION SECTION below.
                         .mapping-required,
                         .mapping-description {
                             display: table-cell;
-                            padding: 6px 4px;
-                            color: #888;
-                            font-size: 12px;
+                            padding: 8px 0;
+                            color: #666;
+                            font-size: 13px;
+                            border-bottom: 1px solid #eee;
+                            text-align: left;
+                            vertical-align: top;
                         }
 
                         .mapping-label {
-                            font-weight: 500;
-                            width: 60px;
-                            white-space: nowrap;
-                        }
-                        
-                        .mapping-type,
-                        .mapping-required {
-                            font-weight: 400;
                             width: 80px;
                             white-space: nowrap;
-                            text-align: center;
                         }
 
                         .mapping-type {
-                            text-align: left;
+                            width: 80px;
+                            white-space: nowrap;
+                        }
+
+                        .mapping-required {
+                            width: 70px;
+                            white-space: nowrap;
                         }
 
                         .mapping-description {
+                            width: auto;
                             padding-left: 12px;
+                            min-width: 200px;
                         }
 
-                        /* Ensure all header cells have the same alignment as their column values */
-                        .mapping-row.mapping-header .mapping-description {
-                            padding-left: 12px;
+                        .base-path-info {
+                            color: #666;
+                            font-size: 13px;
+                            text-align: left;
+                            padding: 8px 0px;
                         }
-                        
-                        /* Ensure all header cells have the same font weight */
-                        .mapping-row.mapping-header .mapping-label,
-                        .mapping-row.mapping-header .mapping-type,
-                        .mapping-row.mapping-header .mapping-required,
-                        .mapping-row.mapping-header .mapping-description {
-                            font-weight: 600;
+
+                        .mapping-toggle {
+                            display: none;
                         }
 
                         /* Control styles */
@@ -1173,6 +1124,11 @@ For configuration options, see the CONFIGURATION SECTION below.
                           `<h1 style="color: #333;">${message}</h1>` : 
                           `<h2>${message}</h2>`}
                         ${details ? `<div class="error-path" style="margin-bottom: 20px;">${details}</div>` : ''}
+                    </div>
+                    <div id="mapping-info" class="mapping-info">
+                        <h4>Expected Inputs</h4>
+                        <div class="mapping-details"></div>
+                        <div class="base-path-info"></div>
                     </div>
                 `;
                 
@@ -1758,7 +1714,7 @@ For configuration options, see the CONFIGURATION SECTION below.
             updateBasepathDisplay() {
                 const basePathInfo = this.shadowRoot.querySelector('.base-path-info');
                 if (basePathInfo) {
-                    basePathInfo.textContent = "Current 'basepath' parameter: " + this.basePath;
+                    basePathInfo.textContent = "Current base path: " + this.basePath;
                 }
             }
 
@@ -2159,7 +2115,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                     height: 'Height of the bounding box relative to image height (normalized 0-1)',
                     class: 'Classification label of the detected object',
                     probability: 'Confidence score of the detection (0-1)',
-                    
+                    basepath: 'Base path for loading images (e.g. "./images/")'
                 };
                 
                 // Define column types (measure or category)
@@ -2172,6 +2128,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                     height: 'Measure',
                     class: 'Category',
                     probability: 'Measure',
+                    basepath: 'Parameter'
                 };
                 
                 // Define which columns are required
@@ -2184,6 +2141,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                     height: 'yes',
                     class: 'no',
                     probability: 'no',
+                    basepath: 'no'
                 };
                 
                 mappingDetails.innerHTML = `
@@ -2193,13 +2151,13 @@ For configuration options, see the CONFIGURATION SECTION below.
                         <div class="mapping-required">Required</div>
                         <div class="mapping-description">Description</div>
                     </div>
-                ` + Object.entries(this.columnMapping)
-                    .map(([key, label]) => `
+                ` + Object.entries(explanations)
+                    .map(([key, description]) => `
                         <div class="mapping-row">
-                            <div class="mapping-label">${label}</div>
+                            <div class="mapping-label">${key}</div>
                             <div class="mapping-type">${columnTypes[key]}</div>
                             <div class="mapping-required">${requiredColumns[key]}</div>
-                            <div class="mapping-description">${explanations[key]}</div>
+                            <div class="mapping-description">${description}</div>
                         </div>
                     `).join('');
             }
