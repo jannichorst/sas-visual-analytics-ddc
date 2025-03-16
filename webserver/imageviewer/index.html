@@ -242,8 +242,12 @@ For configuration options, see the CONFIGURATION SECTION below.
                         .mapping-row.mapping-header > div {
                             color: #333;
                             font-weight: 500;
-                            padding: 8px 12px;
+                            padding: 8px 8px;
                             text-align: left;
+                        }
+
+                        .mapping-row.mapping-header > .mapping-description {
+                            padding: 8px 12px;
                         }
 
                         .mapping-label,
@@ -251,7 +255,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                         .mapping-required,
                         .mapping-description {
                             display: table-cell;
-                            padding: 8px 12px;
+                            padding: 8px 8px;
                             color: #666;
                             font-size: 13px;
                             border-bottom: 1px solid #eee;
@@ -260,22 +264,24 @@ For configuration options, see the CONFIGURATION SECTION below.
                         }
 
                         .mapping-label {
-                            width: 100px;
-                            white-space: nowrap;
-                        }
-
-                        .mapping-type {
-                            width: 100px;
-                            white-space: nowrap;
-                        }
-
-                        .mapping-required {
                             width: 80px;
                             white-space: nowrap;
                         }
 
+                        .mapping-type {
+                            width: 80px;
+                            white-space: nowrap;
+                        }
+
+                        .mapping-required {
+                            width: 70px;
+                            white-space: nowrap;
+                        }
+
                         .mapping-description {
+                            width: auto;
                             padding-left: 12px;
+                            min-width: 200px;
                         }
 
                         .base-path-info {
@@ -550,18 +556,21 @@ For configuration options, see the CONFIGURATION SECTION below.
             updateMappingExplanations() {
                 const mappingDetails = this.shadowRoot.querySelector('.mapping-details');
                 const explanations = {
+                    image: 'File name or local path of the image to display (combined with basepath)',
                     basepath: 'Base path for loading images (e.g. "./images/")',
                     interactive: 'Enable or disable user interaction ("true" or "false")'
                 };
                 
                 // Define column types
                 const columnTypes = {
+                    image: 'Measure',
                     basepath: 'Parameter',
                     interactive: 'Parameter'
                 };
                 
                 // Define which columns are required
                 const requiredColumns = {
+                    image: 'yes',
                     basepath: 'no',
                     interactive: 'no'
                 };
@@ -771,7 +780,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                     if (vaData.length > 1 || (vaData[0] && vaData[0].length > 1)) {
                         this.showError(
                             "Select a single image to view", 
-                            "Multiple values were provided. Select a single cell containing the image path.", 
+                            "", 
                             'neutral',
                             event.data
                         );
