@@ -1100,6 +1100,11 @@ For configuration options, see the CONFIGURATION SECTION below.
              * @param {Object} data - Optional data object to display in structured format
              */
             showError(message, details = '', type = 'error', isDataFormatError = false, data = null) {
+                // First, hide any existing image and toolbar
+                this.image.style.display = 'none';
+                this.canvas.style.display = 'none';  // Also hide the canvas for bbox viewer
+                this.shadowRoot.querySelector('#toolbar').classList.add('hidden');
+
                 this.errorMessage.style.display = 'block';
                 
                 // Reset classes and apply the appropriate one
