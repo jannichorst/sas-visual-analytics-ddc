@@ -1606,9 +1606,10 @@ For configuration options, see the CONFIGURATION SECTION below.
                     // Hide error message if it was showing
                     this.errorMessage.style.display = 'none';
                     
-                    // Show image and canvas on successful load
+                    // Show image, canvas, and toolbar on successful load
                     this.image.style.display = 'block';
                     this.canvas.style.display = 'block';
+                    this.shadowRoot.querySelector('#toolbar').classList.remove('hidden');
                     
                     // Update the view
                     requestAnimationFrame(() => {
