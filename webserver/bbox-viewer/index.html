@@ -177,6 +177,123 @@ For configuration options, see the CONFIGURATION SECTION below.
             overflow-y: auto;
         }
 
+        /* Scrollbar styling for error details */
+        #error-details::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        #error-details::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        #error-details::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 4px;
+        }
+        
+        #error-details::-webkit-scrollbar-thumb:hover {
+            background: #aaa;
+        }
+
+        /* For Firefox */
+        #error-details {
+            scrollbar-width: thin;
+            scrollbar-color: #ccc #f1f1f1;
+        }
+
+        /* Mapping styles */
+        .mapping-info {
+            margin-top: 20px;
+            color: #666;
+            text-align: left;
+            padding: 0;
+            font-size: 13px;
+            background: none;
+        }
+
+        .mapping-info h4 {
+            color: #333;
+            font-size: 16px;
+            margin: 0 0 15px 0;
+            font-weight: 500;
+        }
+
+        .mapping-details {
+            display: table !important;
+            margin-top: 0;
+            border-spacing: 0;
+            width: 100%;
+            background: none;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        .mapping-row {
+            display: table-row;
+        }
+
+        .mapping-row.mapping-header {
+            border-bottom: 1px solid #ddd;
+        }
+
+        .mapping-row.mapping-header > div {
+            color: #333;
+            font-weight: 500;
+            padding: 0;
+            text-align: left;
+        }
+
+        .mapping-row.mapping-header > .mapping-description {
+            padding: 0 12px;
+        }
+
+        .mapping-label,
+        .mapping-type,
+        .mapping-required,
+        .mapping-description {
+            display: table-cell;
+            padding: 8px 0;
+            color: #666;
+            font-size: 13px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .mapping-label {
+            width: 80px;
+            white-space: nowrap;
+        }
+
+        .mapping-type {
+            width: 80px;
+            white-space: nowrap;
+        }
+
+        .mapping-required {
+            width: 70px;
+            white-space: nowrap;
+        }
+
+        .mapping-description {
+            width: auto;
+            padding-left: 12px;
+            min-width: 200px;
+        }
+
+        .base-path-info {
+            color: #666;
+            font-size: 13px;
+            text-align: left;
+            padding: 8px 0px;
+        }
+
+        .mapping-toggle {
+            display: none;
+        }
+
         /* Control styles */
         .view-control {
             display: flex;
@@ -564,6 +681,123 @@ For configuration options, see the CONFIGURATION SECTION below.
                             max-height: 200px;
                             overflow-y: auto;
                         }
+                        
+                        /* Scrollbar styling for error details */
+                        #error-details::-webkit-scrollbar {
+                            width: 8px;
+                            height: 8px;
+                        }
+                        
+                        #error-details::-webkit-scrollbar-track {
+                            background: #f1f1f1;
+                            border-radius: 4px;
+                        }
+                        
+                        #error-details::-webkit-scrollbar-thumb {
+                            background: #ccc;
+                            border-radius: 4px;
+                        }
+                        
+                        #error-details::-webkit-scrollbar-thumb:hover {
+                            background: #aaa;
+                        }
+
+                        /* For Firefox */
+                        #error-details {
+                            scrollbar-width: thin;
+                            scrollbar-color: #ccc #f1f1f1;
+                        }
+
+                        /* Mapping styles */
+                        .mapping-info {
+                            margin-top: 20px;
+                            color: #666;
+                            text-align: left;
+                            padding: 0;
+                            font-size: 13px;
+                            background: none;
+                        }
+
+                        .mapping-info h4 {
+                            color: #333;
+                            font-size: 16px;
+                            margin: 0 0 15px 0;
+                            font-weight: 500;
+                        }
+
+                        .mapping-details {
+                            display: table !important;
+                            margin-top: 0;
+                            border-spacing: 0;
+                            width: 100%;
+                            background: none;
+                            border-radius: 0;
+                            box-shadow: none;
+                        }
+
+                        .mapping-row {
+                            display: table-row;
+                        }
+
+                        .mapping-row.mapping-header {
+                            border-bottom: 1px solid #ddd;
+                        }
+
+                        .mapping-row.mapping-header > div {
+                            color: #333;
+                            font-weight: 500;
+                            padding: 0;
+                            text-align: left;
+                        }
+
+                        .mapping-row.mapping-header > .mapping-description {
+                            padding: 0 12px;
+                        }
+
+                        .mapping-label,
+                        .mapping-type,
+                        .mapping-required,
+                        .mapping-description {
+                            display: table-cell;
+                            padding: 8px 0;
+                            color: #666;
+                            font-size: 13px;
+                            border-bottom: 1px solid #eee;
+                            text-align: left;
+                            vertical-align: top;
+                        }
+
+                        .mapping-label {
+                            width: 80px;
+                            white-space: nowrap;
+                        }
+
+                        .mapping-type {
+                            width: 80px;
+                            white-space: nowrap;
+                        }
+
+                        .mapping-required {
+                            width: 70px;
+                            white-space: nowrap;
+                        }
+
+                        .mapping-description {
+                            width: auto;
+                            padding-left: 12px;
+                            min-width: 200px;
+                        }
+
+                        .base-path-info {
+                            color: #666;
+                            font-size: 13px;
+                            text-align: left;
+                            padding: 8px 0px;
+                        }
+
+                        .mapping-toggle {
+                            display: none;
+                        }
 
                         /* Control styles */
                         .view-control {
@@ -867,12 +1101,6 @@ For configuration options, see the CONFIGURATION SECTION below.
              */
             showError(message, details = '', type = 'error', isDataFormatError = false, data = null) {
                 this.errorMessage.style.display = 'block';
-                
-                // Only hide the image for regular errors, not for type validation errors
-                if (type !== 'type-error') {
-                    this.image.style.display = 'none';
-                    this.shadowRoot.querySelector('#toolbar').classList.add('hidden');
-                }
                 
                 // Reset classes and apply the appropriate one
                 this.errorMessage.classList.remove('error', 'neutral', 'type-error');
