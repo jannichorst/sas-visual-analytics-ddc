@@ -1102,7 +1102,6 @@ For configuration options, see the CONFIGURATION SECTION below.
             showError(message, details = '', type = 'error', isDataFormatError = false, data = null) {
                 // First, hide any existing image and toolbar
                 this.image.style.display = 'none';
-                this.canvas.style.display = 'none';  // Also hide the canvas for bbox viewer
                 this.shadowRoot.querySelector('#toolbar').classList.add('hidden');
 
                 this.errorMessage.style.display = 'block';
@@ -1359,7 +1358,8 @@ For configuration options, see the CONFIGURATION SECTION below.
                         'left',   // X coordinate (normalized 0-1)
                         'top',    // Y coordinate (normalized 0-1)
                         'width',  // Width (normalized 0-1)
-                        'height'  // Height (normalized 0-1)
+                        'height',  // Height (normalized 0-1)
+                        'id' // Unique identifier for each bounding box
                     ];
                     
                     // Validate that all required columns exist in the data
@@ -1382,13 +1382,14 @@ For configuration options, see the CONFIGURATION SECTION below.
                     if (this.enableTypeChecking) {
                         const typeErrors = this.validateColumnTypes(vaData.columns, columnIndices);
                         if (typeErrors.length > 0) {
-                            // Show error but continue processing to display the image with available data
-                            this.showTypeError(
-                                "Column type validation errors",
-                                typeErrors.join('<br>'),
+                            this.showError(
+                                "Invalid column types detected",
+                                typeErrors.join('\n'),
+                                'error',
+                                true,
                                 vaData
                             );
-                            // We don't return here to allow processing to continue
+                            return;
                         }
                     }
 
@@ -1564,61 +1565,6 @@ For configuration options, see the CONFIGURATION SECTION below.
                 }
                 
                 return errors;
-            }
-
-            /**
-             * Displays a type error message but still shows the mapping table
-             * @param {string} message - The main error message to display
-             * @param {string} details - Additional error details
-             * @param {Object} data - Optional data object to display in structured format
-             */
-            showTypeError(message, details, data = null) {
-                // Use the existing showError method with a special flag to keep the image visible
-                this.showError(message, details, 'type-error', true, data);
-                
-                // Make sure the image and toolbar remain visible
-                if (this.image.complete && this.image.naturalWidth > 0) {
-                    this.image.style.display = 'block';
-                    this.shadowRoot.querySelector('#toolbar').classList.remove('hidden');
-                }
-                
-                // Add a debug button to the error message
-                const errorMessage = this.shadowRoot.querySelector('#error-message');
-                if (errorMessage) {
-                    const debugButton = document.createElement('button');
-                    debugButton.textContent = 'Enable Debug Mode';
-                    debugButton.style.cssText = `
-                        background: #f0f0f0;
-                        border: 1px solid #ccc;
-                        border-radius: 4px;
-                        padding: 5px 10px;
-                        cursor: pointer;
-                        font-size: 12px;
-                        margin-top: 10px;
-                        margin-right: 10px;
-                    `;
-                    debugButton.addEventListener('click', () => {
-                        this.setVerboseLogging(true);
-                        // Re-validate to show detailed logs
-                        if (data && data.columns) {
-                            const columnIndices = {};
-                            data.columns.forEach((col, index) => {
-                                columnIndices[col.label] = index;
-                            });
-                            this.validateColumnTypes(data.columns, columnIndices);
-                        }
-                        debugButton.textContent = 'Debug Mode Enabled';
-                        debugButton.disabled = true;
-                    });
-                    
-                    // Add the button after any existing buttons
-                    const firstButton = errorMessage.querySelector('button');
-                    if (firstButton) {
-                        firstButton.parentNode.insertBefore(debugButton, firstButton.nextSibling);
-                    } else {
-                        errorMessage.appendChild(debugButton);
-                    }
-                }
             }
 
             /**
