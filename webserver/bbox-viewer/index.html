@@ -1541,7 +1541,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                             
                             // If usage is not set or not categorical, then type must be string
                             if (!isValidType && !isValidUsage) {
-                                errors.push(`Column '${mappedLabel}' should be a category, but is a Measure.`);
+                                errors.push(`Column '${mappedLabel}' should be a category, but is a measure.`);
                             }
                         }
                     }
@@ -1551,7 +1551,7 @@ For configuration options, see the CONFIGURATION SECTION below.
                         // Only validate if usage is defined
                         if (column.usage) {
                             if (column.usage !== 'quantitative') {
-                                errors.push(`Column '${mappedLabel}' should be a measure, but is a Category`);
+                                errors.push(`Column '${mappedLabel}' should be a measure, but is a category`);
                             }
                         }
                     }
@@ -1593,7 +1593,6 @@ For configuration options, see the CONFIGURATION SECTION below.
                 this.canvas.getContext('2d').clearRect(0, 0, this.canvas.width, this.canvas.height);
                 this.image.style.display = 'none';
                 this.canvas.style.display = 'none';
-                this.shadowRoot.querySelector('#toolbar').classList.add('hidden');
                 
                 // Reset zoom and position before loading new image
                 this.zoomLevel = 1;
@@ -1607,10 +1606,9 @@ For configuration options, see the CONFIGURATION SECTION below.
                     // Hide error message if it was showing
                     this.errorMessage.style.display = 'none';
                     
-                    // Show image, canvas, and toolbar on successful load
+                    // Show image and canvas on successful load
                     this.image.style.display = 'block';
                     this.canvas.style.display = 'block';
-                    this.shadowRoot.querySelector('#toolbar').classList.remove('hidden');
                     
                     // Update the view
                     requestAnimationFrame(() => {
