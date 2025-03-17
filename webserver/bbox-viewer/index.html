@@ -1115,11 +1115,13 @@ For configuration options, see the CONFIGURATION SECTION below.
                           `<h2>${message}</h2>`}
                         ${details ? `<div class="error-path" style="margin-bottom: 20px;">${details}</div>` : ''}
                     </div>
+                    ${type !== 'neutral' && isDataFormatError ? `
                     <div id="mapping-info" class="mapping-info">
                         <h4>Expected Inputs</h4>
                         <div class="mapping-details"></div>
                         <div class="base-path-info"></div>
                     </div>
+                    ` : ''}
                 `;
                 
                 // Add mapping info for data format errors
