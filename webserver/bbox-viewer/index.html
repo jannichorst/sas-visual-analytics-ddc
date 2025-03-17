@@ -1533,12 +1533,14 @@ For configuration options, see the CONFIGURATION SECTION below.
                             const isValidType = column.type === 'string';
                             const isValidUsage = column.usage === 'categorical';
                             
-                            // Special check for id column - this is important for proper validation
-                            if (key === 'id' && column.type === 'number') {
-                                errors.push(`Column '${mappedLabel}' (id) should be of type 'string' or have usage 'categorical', but has type 'number'. This may cause issues with bounding box identification.`);
+                            // If usage is explicitly set to categorical, type doesn't matter
+                            if (isValidUsage) {
+                                // Valid - usage is categorical, so we don't care about the type
+                                return;
                             }
-                            // General check for all categorical fields
-                            else if (!isValidType && !isValidUsage) {
+                            
+                            // If usage is not set or not categorical, then type must be string
+                            if (!isValidType && !isValidUsage) {
                                 errors.push(`Column '${mappedLabel}' should be of type 'string' or have usage 'categorical', but has type '${column.type || 'unknown'}' and usage '${column.usage || 'unknown'}'.`);
                             }
                         }
